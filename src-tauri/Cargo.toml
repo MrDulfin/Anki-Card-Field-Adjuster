@@ -15,9 +15,9 @@ tauri-build = { version = "1.5", features = [] }
 [dependencies]
 tauri = { version = "1.5", features = ["shell-open"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0", features = ["std"]}
+serde_json = { version = "1.0", features = ["std"] }
 tokio = { version = "1.34.0", features = ["full"] }
-reqwest = { version = "0.11.22", features = ["json"]}
+reqwest = { version = "0.11.22", features = ["json"] }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

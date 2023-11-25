@@ -30,7 +30,7 @@ struct Params {
     cards: Vec<i64>
 }
 
-#[tauri::command]
+
 pub async fn deck_names() -> Vec<String> {
     let client = Client::new();
 
