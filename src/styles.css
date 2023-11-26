@@ -188,3 +188,12 @@ button {
 #submitQuery:hover {
   border-color: rgb(132, 61, 232);
 }
+#countdown {
+  position: absolute;
+  top: 85%;
+  left: 45%;
+  transform: translate(-50%, 0%);
+  font-size: 3em;
+  color: greenyellow;
+  /* display: none; */
+}

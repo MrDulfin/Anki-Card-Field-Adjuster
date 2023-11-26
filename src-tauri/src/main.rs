@@ -16,8 +16,9 @@ async fn get_decks() -> Vec<String> {
 }
 
 #[tauri::command]
-async fn query(deck: String, cards_with: String, field: String, replace: String) {
- requests::query_send(deck, cards_with, field, replace).await;
+async fn query(deck: String, cards_with: String, field: String, replace: String) -> String {
+ let res = requests::query_send(deck, cards_with, field, replace).await;
+ res
 }
 
 

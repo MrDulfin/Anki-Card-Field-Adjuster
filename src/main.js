@@ -83,10 +83,11 @@ document.getElementById('query').addEventListener("submit", function(event) {
     
     invoke('query', {
       deck: query_deck,
-      cards_with: query_cards_with,
+      cardsWith: query_cards_with,
       field: query_field,
       replace: query_replace,
     }).then((res) => {
+      
       console.log(res)
     })
   } else if (!query_deck) {
