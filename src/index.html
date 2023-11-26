@@ -6,20 +6,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tauri App</title>
     <script type="module" src="/main.js" defer></script>
-    <style>
-      .logo.vanilla:hover {
-        filter: drop-shadow(0 0 2em #ffe21c);
-      }
-    </style>
+    <style></style>
   </head>
 
   <body>
-    <div class="container">
-      <span id="yourMom">A</span>
-      <button id="button">PRESS THIS NOW!!!!</button>
+    <h2 class="center">⚠️BACKUP YOUR DECKS BEFORE USING THIS TOOL⚠️</h1>
+    <p class="center" id="exportMessage">If you have media attached to your anki decks:<br>Anki > Export > Fomat: <span class="code">.colpkg</span> ✅Include Media</p>
 
-      
+    <div class="Confetto">
+      <div class="dropDownContainer">
+        <h2 >Pick a deck:</h2>
+        <div id="dropList" class="dropListClass">
 
+        </div>
+      </div>
+      <div class="findAndReplace">
+        <form id="query">
+          <h2 >For all cards with:</h2>
+          <input type="text" id="cardsWith" name="cardsWith" placeholder="Leave blank to select all">
+          <h2 >In this field:</h2>
+          <input type="text" id="field" name="field">
+          <h2 >Replace that with:</h2>
+          <input type="text" id="replaceWith" name="replaceWith" placeholder="Leave blank to erase">
+          <h2 > </h2>
+          <input type="submit" id="submitQuery" class="center"> 
+        </form>
+      </div>
+      <h3 id="error" class="center"></h1>
+  </div>
     
   </body>
 </html>

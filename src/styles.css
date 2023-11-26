@@ -72,7 +72,7 @@ button {
 }
 
 button:hover {
-  border-color: #396cd8;
+  border-color: rgb(132, 61, 232);
 }
 button:active {
   border-color: #396cd8;
@@ -103,4 +103,88 @@ button {
   button:active {
     background-color: #0f0f0f69;
   }
+}
+.dropDownContainer {
+  position: absolute;
+  display: inline-block;
+  align-items: center;
+  left: 25%;
+  top: 15%;
+  /* bring your own prefixes */
+  transform: translate(-50%, 0%);
+}
+
+.dropListClass {
+  position: absolute;
+  display: none;
+}
+.dropListClass button {
+  display: block;
+}
+.dropListClass button :hover {
+  color: darkslateblue;
+}
+
+.show {
+  display: block;
+}
+
+.findAndReplace {
+  display: inline-block;
+  font-size: large;
+  position: absolute;
+  left: 75%;
+  top: 15%;
+  transform: translate(-50%, 0%);
+}
+.center {
+  display: block;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+h2 {
+  color: #d4cede;
+}
+button {
+  color: #d4cede;
+}
+
+#error {
+  position: absolute;
+  color: rgb(211, 95, 95);
+  left: 50%;
+  top: 80%;
+  transform: translate(-50%, 0%);
+  width: 90%;
+  line-height: 50px;
+}
+.selected {
+  background-color: #646cff;
+  color: #2f2f2f;
+  font-weight: bold;
+}
+.selected:hover {
+  background-color: #898fff;
+  border-color: #d4cede;
+}
+
+#exportMessage {
+  position: absolute;
+  left: 50%;
+  top: 5%;
+  transform: translate(-50%, 0%);
+}
+
+.code {
+    font-family: Monaco, monospace;
+    line-height: 100%;
+    background-color:#211e24;
+    padding: 0.2em;
+    letter-spacing: -0.05em;
+    word-break: normal;
+    border-radius: 5px;
+  }
+#submitQuery:hover {
+  border-color: rgb(132, 61, 232);
 }
