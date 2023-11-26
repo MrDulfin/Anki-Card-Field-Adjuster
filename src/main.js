@@ -65,6 +65,7 @@ function toggleShow() {
 }
 
 function showError(error) {
+  document.getElementById("wait").innerText = "";
   document.getElementById("error").innerText = error;
 }
 
@@ -74,20 +75,24 @@ document.getElementById('query').addEventListener("submit", function(event) {
   var query_cards_with = formRes.elements['cardsWith'].value;
   var query_field = formRes.elements['field'].value;
   var query_replace = formRes.elements['replaceWith'].value;
-
+  
   if (query_deck && query_field) {
     if(query_cards_with == "") {
       query_cards_with = "*";
     }
     console.log("Deck: " + query_deck + "\nCards with: " + query_cards_with + "\nIn Field: " + query_field + "\nReplace with: " + query_replace);
-    
+    document.getElementById("error").innerText = "";
+
+    let waiting = document.getElementById("wait");
+
+    waiting.innerText = "Please wait...";
     invoke('query', {
       deck: query_deck,
       cardsWith: query_cards_with,
       field: query_field,
       replace: query_replace,
     }).then((res) => {
-      
+      waiting.innerText = res;
       console.log(res)
     })
   } else if (!query_deck) {

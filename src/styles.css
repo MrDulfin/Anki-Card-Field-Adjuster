@@ -188,7 +188,7 @@ button {
 #submitQuery:hover {
   border-color: rgb(132, 61, 232);
 }
-#countdown {
+#wait {
   position: absolute;
   top: 85%;
   left: 45%;

@@ -30,6 +30,7 @@ async fn main() -> Result<(), Error> {
         .setup(|app| {
             let window = app.get_window("main").unwrap();
             window.set_resizable(false);
+            window.set_title("MrDulfin's Anki Card Field Adjuster");
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![get_decks, query])
