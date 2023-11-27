@@ -57,8 +57,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "anki-card-adjuster"
-version = "0.0.0"
+name = "anki-card-fields-adjuster"
+version = "1.0.1"
 dependencies = [
  "reqwest",
  "serde",

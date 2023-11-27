@@ -1,8 +1,8 @@
 [package]
-name = "anki-card-adjuster"
-version = "0.0.0"
-description = "A Tauri App"
-authors = ["you"]
+name = "anki-card-fields-adjuster"
+version = "1.0.1"
+description = "A simple Anki Card field editor"
+authors = ["MrDulfin"]
 license = ""
 repository = ""
 edition = "2021"
