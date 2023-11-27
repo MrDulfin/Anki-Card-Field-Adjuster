@@ -1,7 +1,6 @@
-# Tauri + Vanilla
+# Anki Card Field Adjuster
+a simple program to adjust your Anki flashcard fields in bulk utilizing the [AnkiConnect](https://ankiweb.net/shared/info/2055492159) plugin
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Javascript.
+[check here](https://docs.ankiweb.net/searching.html) for the search syntax
 
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## MAKE SURE TO BACKUP YOUR DECK BEFORE USING
