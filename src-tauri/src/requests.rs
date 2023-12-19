@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use reqwest::{Client, Error};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Response {
@@ -105,22 +105,19 @@ struct Note {
     id: i64,
     fields: HashMap<String, String>
 }
-#[derive(Debug, Serialize, Deserialize)]
-struct Fields;
-    
 
 
 
-pub async fn query_send(deck: String, cards_with: String, field: String, replace: String) -> String {
+pub async fn query_send(deck: String, cards_with: Option<String>, field: String, replace: String) -> String {
+    dbg!(&cards_with);
     
     let client = Client::new();
-    let request: Request = Request { 
-        action: "findNotes".to_string(), 
-        version: 6, 
-        params: Some(Params {  cards: None, query: Some(format!(r#"deck:"{deck}" {field}:{cards_with}"#).to_string()) })
-     };
-    let cards: Vec<i64> = post_req2(&client, request).await.unwrap();
-
+    
+    let cards = find_notes(&client, &deck, Some(&field), 
+    match cards_with {
+        Some(e) => e,
+        None => "".to_string(),
+    }).await;
 
     for card in cards {
         let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
@@ -137,8 +134,52 @@ pub async fn query_send(deck: String, cards_with: String, field: String, replace
             } 
         };
 
-        post_req3(&client, query).await;
+       _ = post_req3(&client, query).await;
     }
-    "Done!".to_string().into()
+    "Done!".to_string()
+}
+#[derive(Serialize, Deserialize)]
+struct  NoteInfo {
+    #[serde(rename = "noteID")]
+    note_id: i64,
+    #[serde(rename = "modelName")]
+    model_name: String,
+    tags: Vec<String>,
+    fields: HashMap<String, Vec<HashMap<String, String>>>,
+}
 
+pub async fn get_models(client: &Client, deck: &str) {
+    let notes = find_notes(client, deck, None, "".to_string()).await;
+    notes.iter().map(|n| {
+
+    })
+}
+
+pub async fn find_notes(client: &Client, deck: &str, field: Option<&str>, cards_with: String) -> Vec<i64> {
+    let mut cards = Vec::new();
+    let bun = field.unwrap_or("You'll never see this");
+    //get cards with field empty
+    if field.is_some() && cards_with.is_empty() {
+        let request: Request = Request { 
+            action: "findNotes".to_string(), 
+            version: 6, 
+            params: Some(Params {  cards: None, query: Some(format!(r#"deck:"{deck}" {bun}:"#).to_string()) })
+         };
+        cards.append(&mut post_req2(client, request).await.unwrap());
+    }else if field.is_some() && !cards_with.is_empty() {
+        let request: Request = Request { 
+            action: "findNotes".to_string(), 
+            version: 6, 
+            params: Some(Params {  cards: None, query: Some(format!(r#"deck:"{deck}" {bun}:{cards_with}"#).to_string()) })
+         };
+        cards.append(&mut post_req2(client, request).await.unwrap());
+    }else if field.is_none() {
+        let request: Request = Request { 
+            action: "findNotes".to_string(), 
+            version: 6, 
+            params: Some(Params {  cards: None, query: Some(format!(r#"deck:"{deck}"#).to_string()) })
+         };
+        cards.append(&mut post_req2(client, request).await.unwrap());
+    }
+    cards
 }

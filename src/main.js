@@ -78,7 +78,7 @@ document.getElementById('query').addEventListener("submit", function(event) {
   
   if (query_deck && query_field) {
     if(query_cards_with == "") {
-      query_cards_with = "*";
+      query_cards_with = "";
     }
     console.log("Deck: " + query_deck + "\nCards with: " + query_cards_with + "\nIn Field: " + query_field + "\nReplace with: " + query_replace);
     document.getElementById("error").innerText = "";

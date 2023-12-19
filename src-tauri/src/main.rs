@@ -4,9 +4,10 @@
 // use reqwest::{Client, Error};
 // use serde::{Deserialize, Serialize};
 use std::io::Error;
-use tauri::{window, Window, Manager, Size};
+use reqwest::Client;
+use tauri::Manager;
 
-use crate::requests::deck_names as deck_names;
+use crate::requests::*;
 
 mod requests;
 
@@ -14,11 +15,15 @@ mod requests;
 async fn get_decks() -> Vec<String> {
     deck_names().await
 }
+#[tauri::command]
+async fn get_notes(deck: String) -> Result<(), String> {
+  _ = find_notes(&Client::new(), &deck, None, "".to_string());
+  Ok(())
+}
 
 #[tauri::command]
-async fn query(deck: String, cards_with: String, field: String, replace: String) -> String {
- let res = requests::query_send(deck, cards_with, field, replace).await;
- res
+async fn query(deck: String, cards_with: Option<String>, field: String, replace: String) -> String {
+ requests::query_send(deck, cards_with, field, replace).await
 }
 
 
@@ -29,11 +34,11 @@ async fn main() -> Result<(), Error> {
         // .manage(MyState(text.into()))
         .setup(|app| {
             let window = app.get_window("main").unwrap();
-            window.set_resizable(false);
-            window.set_title("MrDulfin's Anki Card Field Adjuster");
+            _ = window.set_resizable(false);
+            _ = window.set_title("MrDulfin's Anki Card Field Adjuster");
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_decks, query])
+        .invoke_handler(tauri::generate_handler![get_decks, query, get_notes])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 
