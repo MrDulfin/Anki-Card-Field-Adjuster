@@ -10,6 +10,8 @@ use tauri::Manager;
 use crate::requests::*;
 
 mod requests;
+mod edits;
+mod responses;
 
 #[tauri::command]
 async fn get_decks() -> Vec<String> {
@@ -29,7 +31,7 @@ async fn query(deck: String, cards_with: Option<String>, field: String, replace:
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    
+
     tauri::Builder::default()
         // .manage(MyState(text.into()))
         .setup(|app| {

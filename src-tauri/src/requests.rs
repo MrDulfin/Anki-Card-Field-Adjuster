@@ -3,6 +3,9 @@ use std::collections::HashMap;
 use reqwest::{Client, Error};
 use serde::{Deserialize, Serialize};
 
+use crate::{edits::*, get_decks, get_notes};
+use crate::responses::{PostResult, CardResponse, CardsResponse, DeckResponse, DecksResponse, ModelResponse, ModelsResponse};
+
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Response {
@@ -20,7 +23,7 @@ impl Response {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Request {
+pub struct Request {
     action: String,
     version: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -28,11 +31,22 @@ struct Request {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Params {
+pub struct Params {
     #[serde(skip_serializing_if = "Option::is_none")]
-    cards: Option<Vec<i64>>,
+    pub cards: Option<Vec<i64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    query: Option<String>
+    pub query: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<Note>
+}
+impl Default for Params {
+    fn default() -> Self {
+        Params {
+            cards: None,
+            query: None,
+            note: None
+        }
+    }
 }
 
 
@@ -45,31 +59,26 @@ pub async fn deck_names() -> Vec<String> {
         params: None,
     };
 
-    let result = post_req(client, request).await;
-
-    result.unwrap()
+    get_req(&client, request).await.unwrap().to_decks()
 }
 
-async fn post_req(client: Client, request: Request) -> Result<Vec<String>, Error> {
+pub async fn get_req(client: &Client, request: Request) -> Result<PostResult, Error> {
     let res: Response = client.post("http://127.0.0.1:8765/")
         .json(&request)
         .send()
         .await?
         .json()
         .await?;
-    Ok(res.get_response())
+    dbg!(&PostResult::try_from(res.get_response()).unwrap());
+    Ok(PostResult::try_from(res.get_response()).unwrap())
 }
-async fn post_req2(client: &Client, request: Request) -> Result<Vec<i64>, Error> {
-    let res: Response2 = client.post("http://127.0.0.1:8765/")
-        .json(&request)
-        .send()
-        .await?
-        .json()
-        .await?;
-    Ok(res.get_response())
-    
+#[tokio::test]
+async fn test_() {
+    let e = find_notes(&Client::new(), "JP Mining Note", Some("IsHoverCard"), "*".to_string()).await;
+    println!("{:?}", e);
+
 }
-async fn post_req3(client: &Client, request: Query) -> Result<(), Error> {
+pub async fn post_req(client: &Client, request: Query) -> Result<(), Error> {
     client.post("http://127.0.0.1:8765/")
         .json(&request)
         .send()
@@ -77,65 +86,27 @@ async fn post_req3(client: &Client, request: Query) -> Result<(), Error> {
     Ok(())
 }
 #[derive(Debug, Serialize, Deserialize)]
-struct Query {
-    action: String,
-    version: i32,
-    params:Params2
+pub struct Query {
+    pub action: String,
+    pub version: i32,
+    pub params:Params
 }
+
+
 #[derive(Debug, Serialize, Deserialize)]
-struct Response2 {
-    result: Option<Vec<i64>>,
-    error: Option<String>
-}
-impl Response2 {
-    fn get_response(&self) -> Vec<i64>{
-       let sugar: Vec<i64> = match &self.result {
-        Some(bunny) => bunny.to_vec(),
-        None => panic!()
-       };
-       sugar
-    }
-}
-#[derive(Debug, Serialize, Deserialize)]
-struct Params2 {
-    note: Note
-}
-#[derive(Debug, Serialize, Deserialize)]
-struct Note {
-    id: i64,
-    fields: HashMap<String, String>
+pub struct Note {
+    pub id: i64,
+    pub fields: HashMap<String, String>
 }
 
 
 
 pub async fn query_send(deck: String, cards_with: Option<String>, field: String, replace: String) -> String {
     dbg!(&cards_with);
-    
+
     let client = Client::new();
-    
-    let cards = find_notes(&client, &deck, Some(&field), 
-    match cards_with {
-        Some(e) => e,
-        None => "".to_string(),
-    }).await;
 
-    for card in cards {
-        let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
-        field2.insert(field.clone(), replace.clone());
 
-        let query: Query = Query { 
-            action: "updateNoteFields".to_string(), 
-            version: 6, 
-            params: Params2{
-                note: Note {
-                    id: card,
-                    fields: field2,
-                }
-            } 
-        };
-
-       _ = post_req3(&client, query).await;
-    }
     "Done!".to_string()
 }
 #[derive(Serialize, Deserialize)]
@@ -147,39 +118,45 @@ struct  NoteInfo {
     tags: Vec<String>,
     fields: HashMap<String, Vec<HashMap<String, String>>>,
 }
+//TODO: get_models()
+// pub async fn get_models(client: &Client, deck: &str) {
+//     let notes = find_notes(client, deck, None, "".to_string()).await;
+//     notes.iter().map(|n| {
 
-pub async fn get_models(client: &Client, deck: &str) {
-    let notes = find_notes(client, deck, None, "".to_string()).await;
-    notes.iter().map(|n| {
-
-    })
-}
+//     })
+// }
+// pub async fn get_model(client: &Client, card:)
 
 pub async fn find_notes(client: &Client, deck: &str, field: Option<&str>, cards_with: String) -> Vec<i64> {
     let mut cards = Vec::new();
     let bun = field.unwrap_or("You'll never see this");
     //get cards with field empty
     if field.is_some() && cards_with.is_empty() {
-        let request: Request = Request { 
-            action: "findNotes".to_string(), 
-            version: 6, 
-            params: Some(Params {  cards: None, query: Some(format!(r#"deck:"{deck}" {bun}:"#).to_string()) })
+        let request: Request = Request {
+            action: "findNotes".to_string(),
+            version: 6,
+            params: Some(Params {  cards: None, query: Some(format!(r#"deck:"{deck}" {bun}:"#).to_string()), ..Params::default() })
          };
-        cards.append(&mut post_req2(client, request).await.unwrap());
+        cards.append(&mut get_req(client, request).await.unwrap().to_cards());
     }else if field.is_some() && !cards_with.is_empty() {
-        let request: Request = Request { 
-            action: "findNotes".to_string(), 
-            version: 6, 
-            params: Some(Params {  cards: None, query: Some(format!(r#"deck:"{deck}" {bun}:{cards_with}"#).to_string()) })
+        let request: Request = Request {
+            action: "findNotes".to_string(),
+            version: 6,
+            params: Some(Params {  cards: None, query: Some(format!(r#"deck:"{deck}" {bun}:{cards_with}"#).to_string()), ..Params::default() })
          };
-        cards.append(&mut post_req2(client, request).await.unwrap());
+        cards.push({
+            match get_req(client, request).await {
+                Ok(e) => e.to_card(),
+                Err(e) => panic!("{e}"),
+            }
+        });
     }else if field.is_none() {
-        let request: Request = Request { 
-            action: "findNotes".to_string(), 
-            version: 6, 
-            params: Some(Params {  cards: None, query: Some(format!(r#"deck:"{deck}"#).to_string()) })
+        let request: Request = Request {
+            action: "findNotes".to_string(),
+            version: 6,
+            params: Some(Params {  cards: None, query: Some(format!(r#"deck:"{deck}"#).to_string()), ..Params::default()})
          };
-        cards.append(&mut post_req2(client, request).await.unwrap());
+        cards.append(&mut get_req(client, request).await.unwrap().to_cards());
     }
     cards
 }
