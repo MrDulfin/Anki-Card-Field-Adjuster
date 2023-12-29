@@ -1,8 +1,11 @@
 use serde::{Serialize, Deserialize};
 
+// pub trait Response2<T>: Response {
 
+// }
 pub trait Response {
     fn get_response<T: Response>(self) -> PostResult;
+
 }
 pub trait Wrapper {
 
@@ -14,6 +17,7 @@ pub struct CardResponse {
     pub error: Option<String>
 }
 impl Response for CardResponse {
+    // type ResResult = i64;
     fn get_response<T: Response>(self) -> PostResult {
         match self.result {
             Some(bunny) => PostResult::Card(bunny),
@@ -29,6 +33,7 @@ pub struct CardsResponse {
     pub error: Option<String>
 }
 impl Response for CardsResponse {
+    // type ResResult = i64;
     fn get_response<T: Response>(self) -> PostResult {
         match self.result {
             Some(bunny) => PostResult::Cards(bunny),
@@ -44,6 +49,7 @@ pub struct DeckResponse {
     pub error: Option<String>
 }
 impl Response for DeckResponse {
+    // type ResResult = String;
     fn get_response<T: Response>(self) -> PostResult {
         match self.result {
             Some(bunny) => PostResult::Deck(bunny),
@@ -59,6 +65,7 @@ pub struct DecksResponse {
     pub error: Option<String>
 }
 impl Response for DecksResponse {
+    // type ResResult = Vec<String>;
     fn get_response<T: Response>(self) -> PostResult {
         match self.result {
             Some(bunny) => PostResult::Decks(bunny),
@@ -74,6 +81,7 @@ pub struct ModelResponse {
     pub error: Option<String>
 }
 impl Response for ModelResponse {
+    // type ResResult = String;
     fn get_response<T: Response>(self) -> PostResult {
         match self.result {
             Some(bunny) => PostResult::Model(bunny),
@@ -87,6 +95,7 @@ pub struct ModelsResponse {
     pub error: Option<String>
 }
 impl Response for ModelsResponse {
+    // type ResResult = Vec<String>;
     fn get_response<T: Response>(self) -> PostResult {
         match self.result {
             Some(bunny) => PostResult::Models(bunny),
