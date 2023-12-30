@@ -1,9 +1,0 @@
-remove newlines, find & replace, display fields from model, get models from deck
-
-make deck button return all model types
-
-leave blank to select blank, add select all toggle
-
-remove spaces
-
-consider the server ports in input
