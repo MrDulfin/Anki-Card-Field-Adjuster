@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use reqwest::{Client, Error};
 
-use crate::requests::{query_send, Query, Params, Note, find_notes, post_req, ReqType};
+use crate::requests::{query_send, Params, Note, find_notes, get_req, ReqType, Request};
 pub async fn replace_fields(client: &Client, deck: &str, cards_with: Option<String>, field: &str, replace: &str) -> Result<(), Error> {
     let cards = find_notes(client, deck, Some(field),
     match cards_with {
@@ -14,19 +14,18 @@ pub async fn replace_fields(client: &Client, deck: &str, cards_with: Option<Stri
         let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
         field2.insert(field.to_string(), replace.to_string());
 
-        let query: Query = Query {
+        let request: Request = Request {
             action: "updateNoteFields".to_string(),
             version: 6,
-            params: Params{
+            params: Some (Params{
                 note: Some(Note {
                     id: card,
                     fields: field2,
                 }),
                 ..Params::default()
-            }
+            })
         };
-
-       _ = post_req(&client, query).await;
+       _ = get_req(ReqType::None, client, request).await;
     }
     Ok(())
 }

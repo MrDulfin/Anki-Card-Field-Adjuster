@@ -9,7 +9,8 @@ use serde_json::json;
 use crate::{edits::*, get_decks, get_notes};
 use crate::responses::{PostResult, CardResponse, CardsResponse, DeckResponse, DecksResponse, ModelResponse, ModelsResponse, Response as BigRes};
 
-
+#[allow(dead_code)]
+#[derive(Debug)]
 pub enum ReqType {
     //Get ??
     Deck,
@@ -28,26 +29,11 @@ pub enum ReqType {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Response {
-    result: Option<Vec<String>>,
-    error: Option<String>
-}
-// impl Response {
-//     fn get_response(&self) -> Vec<String>{
-//        let sugar: Vec<String> = match &self.result {
-//         Some(bunny) => bunny.to_vec(),
-//         None => panic!()
-//        };
-//        sugar
-//     }
-// }
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct Request {
-    action: String,
-    version: i32,
+    pub action: String,
+    pub version: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
-    params: Option<Params>
+    pub params: Option<Params>
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -58,60 +44,6 @@ pub struct Params {
     pub query: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<Note>
-}
-
-pub async fn deck_names() -> Vec<String> {
-    let client = Client::new();
-
-    let request: Request = Request {
-        action: "deckNames".to_string(),
-        version: 6,
-        params: None,
-    };
-   get_req(ReqType::Decks, &client, request).await.unwrap().to_decks()
-}
-
-pub async fn get_req(reqtype: ReqType, client: &Client, request: Request) -> std::result::Result<PostResult, Error> {
-    let res: Response = client.post("http://127.0.0.1:8765/")
-        .json(&request)
-        .send()
-        .await?
-        .json()
-        .await?;
-
-    // let a: Response = res.json().await.try_into().unwrap();
-    dbg!(&res);
-    Ok(PostResult::from(res.result.unwrap()))
-}
-#[tokio::test]
-async fn test_() {
-    let e = deck_names().await;
-    println!("{:?}", e);
-
-}
-
-
-pub async fn post_req(client: &Client, request: Query) -> std::result::Result<(), Error> {
-    client.post("http://127.0.0.1:8765/")
-        .json(&request)
-        .send()
-        .await?;
-    Ok(())
-}
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Query {
-    pub action: String,
-    pub version: i32,
-    pub params:Params
-}
-
-pub async fn query_send(deck: String, cards_with: Option<String>, field: String, replace: String) -> String {
-    dbg!(&cards_with);
-
-    let client = Client::new();
-
-
-    "Done!".to_string()
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -129,6 +61,68 @@ pub struct NoteInfo {
     tags: Vec<String>,
     fields: HashMap<String, Vec<HashMap<String, String>>>,
 }
+
+#[allow(unreachable_code)]
+pub async fn get_req(reqtype: ReqType, client: &Client, request: Request) -> std::result::Result<PostResult, Error> {
+    let res = client.post("http://127.0.0.1:8765/")
+        .json(&request)
+        .send()
+        .await?;
+
+    match reqtype {
+        ReqType::None => {
+            Ok(PostResult::None)
+        }
+        ReqType::Cards => {
+            let bun: CardsResponse = res.json().await.unwrap();
+            Ok(PostResult::Cards(bun.result.unwrap()))
+        },
+        ReqType::Decks => {
+            let bun: DecksResponse = res.json().await.unwrap();
+            Ok(PostResult::Decks(bun.result.unwrap()))
+        }
+        // ReqType::ModelFields => {
+        //     let bun: DecksResponse = res.json().await.unwrap();
+        //     Ok(PostResult::ModelFields(bun.result.unwrap()))
+        // }
+        ReqType::Models => {
+            let bun: ModelsResponse = res.json().await.unwrap();
+            Ok(PostResult::Models(bun.result.unwrap()))
+        }
+        _ => Ok(PostResult::None),
+    }
+}
+
+pub async fn query_send(deck: String, cards_with: Option<String>, field: String, replace: String) -> String {
+
+    let client = Client::new();
+
+    let cards = find_notes(&client, &deck, Some(&field), match cards_with {
+        Some(e) => e,
+        None => "".to_string(),
+    }).await;
+
+    for card in cards {
+        let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
+        field2.insert(field.clone(), replace.clone());
+
+        let request: Request = Request {
+            action: "updateNoteFields".to_string(),
+            version: 6,
+            params: Some(Params {
+                note: Some(Note {
+                    id: card,
+                    fields: field2,
+                }),
+                ..Default::default()
+            }),
+        };
+
+        let _ = get_req(ReqType::None, &client, request).await;
+    }
+    "Done!".to_string()
+}
+
 //TODO: get_models()
 // pub async fn get_models(client: &Client, deck: &str) {
 //     let notes = find_notes(client, deck, None, "".to_string()).await;
@@ -137,6 +131,16 @@ pub struct NoteInfo {
 //     })
 // }
 // pub async fn get_model(client: &Client, card:)
+pub async fn deck_names() -> Vec<String> {
+    let client = Client::new();
+
+    let request: Request = Request {
+        action: "deckNames".to_string(),
+        version: 6,
+        params: None,
+    };
+   get_req(ReqType::Decks, &client, request).await.unwrap().to_decks()
+}
 
 pub async fn find_notes(client: &Client, deck: &str, field: Option<&str>, cards_with: String) -> Vec<i64> {
     let mut cards = Vec::new();
@@ -180,4 +184,10 @@ pub async fn find_notes(client: &Client, deck: &str, field: Option<&str>, cards_
        cards.append(&mut a);
     }
     cards
+}
+
+#[tokio::test]
+async fn test_() {
+    let e = deck_names().await;
+    println!("{:?}", e);
 }

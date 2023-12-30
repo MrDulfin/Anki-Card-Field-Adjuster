@@ -90,6 +90,7 @@ impl Response for ModelResponse {
     }
 
 }
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ModelsResponse {
     pub result: Option<Vec<String>>,
     pub error: Option<String>
