@@ -1,111 +1,58 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+
+use crate::requests::NoteInfo;
 
 // pub trait Response2<T>: Response {
 
 // }
-pub trait Response {
-    fn get_response<T: Response>(self) -> PostResult;
-
-}
-pub trait Wrapper {
-
-}
+pub trait Response {}
+pub trait Wrapper {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CardResponse {
     pub result: Option<i64>,
-    pub error: Option<String>
+    pub error: Option<String>,
 }
-impl Response for CardResponse {
-    // type ResResult = i64;
-    fn get_response<T: Response>(self) -> PostResult {
-        match self.result {
-            Some(bunny) => PostResult::Card(bunny),
-            None => PostResult::None
-        }
-    }
-
-}
+impl Response for CardResponse {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CardsResponse {
     pub result: Option<Vec<i64>>,
-    pub error: Option<String>
+    pub error: Option<String>,
 }
-impl Response for CardsResponse {
-    // type ResResult = i64;
-    fn get_response<T: Response>(self) -> PostResult {
-        match self.result {
-            Some(bunny) => PostResult::Cards(bunny),
-            None => PostResult::None
-        }
-    }
-
-}
+impl Response for CardsResponse {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DeckResponse {
     pub result: Option<String>,
-    pub error: Option<String>
+    pub error: Option<String>,
 }
-impl Response for DeckResponse {
-    // type ResResult = String;
-    fn get_response<T: Response>(self) -> PostResult {
-        match self.result {
-            Some(bunny) => PostResult::Deck(bunny),
-            None => PostResult::None
-        }
-    }
-
-}
+impl Response for DeckResponse {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DecksResponse {
     pub result: Option<Vec<String>>,
-    pub error: Option<String>
+    pub error: Option<String>,
 }
-impl Response for DecksResponse {
-    // type ResResult = Vec<String>;
-    fn get_response<T: Response>(self) -> PostResult {
-        match self.result {
-            Some(bunny) => PostResult::Decks(bunny),
-            None => PostResult::None
-        }
-    }
-
-}
+impl Response for DecksResponse {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ModelResponse {
     pub result: Option<String>,
-    pub error: Option<String>
+    pub error: Option<String>,
 }
-impl Response for ModelResponse {
-    // type ResResult = String;
-    fn get_response<T: Response>(self) -> PostResult {
-        match self.result {
-            Some(bunny) => PostResult::Model(bunny),
-            None => PostResult::None
-        }
-    }
-
-}
+impl Response for ModelResponse {}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ModelsResponse {
     pub result: Option<Vec<String>>,
-    pub error: Option<String>
+    pub error: Option<String>,
 }
-impl Response for ModelsResponse {
-    // type ResResult = Vec<String>;
-    fn get_response<T: Response>(self) -> PostResult {
-        match self.result {
-            Some(bunny) => PostResult::Models(bunny),
-            None => PostResult::None
-        }
-    }
-
+impl Response for ModelsResponse {}
+#[derive(Serialize, Deserialize, Default, Debug)]
+pub struct NoteInfoResponse {
+    pub result: Vec<serde_json::Map<String, serde_json::Value>>,
+    pub error: Option<String>,
 }
-
 
 #[derive(Debug)]
 pub enum PostResult {
@@ -115,9 +62,11 @@ pub enum PostResult {
     Decks(Vec<String>),
     Model(String),
     Models(Vec<String>),
+    NotesInfo(Vec<serde_json::Map<String, serde_json::Value>>),
+    NoteInfo(NoteInfoResponse),
     None,
 }
-
+#[allow(dead_code)]
 impl PostResult {
     pub fn is_none(&self) -> bool {
         matches!(self, PostResult::None)
@@ -131,30 +80,35 @@ impl PostResult {
     pub fn to_cards(self) -> Vec<i64> {
         match self {
             PostResult::Cards(a) => a,
-            _ => panic!("these aren't cards!")
+            _ => panic!("these aren't cards!"),
         }
     }
     pub fn to_decks(self) -> Vec<String> {
         match self {
             PostResult::Decks(a) => a,
-            _ => panic!("these aren't decks!")
+            _ => panic!("these aren't decks!"),
         }
     }
     pub fn to_card(self) -> i64 {
         match self {
             PostResult::Card(a) => a,
-            _ => panic!("this isn't a card!")
+            _ => panic!("this isn't a card!"),
         }
     }
-
+    pub fn to_notes_info(self) -> Vec<serde_json::Map<String, serde_json::Value>> {
+        match self {
+            PostResult::NotesInfo(a) => a,
+            _ => panic!("These aren't notes!"),
+        }
+    }
 }
 impl From<Vec<i64>> for PostResult {
-        fn from(value: Vec<i64>) -> Self {
+    fn from(value: Vec<i64>) -> Self {
         PostResult::Cards(value)
     }
 }
 impl From<i64> for PostResult {
-        fn from(value: i64) -> Self {
+    fn from(value: i64) -> Self {
         PostResult::Card(value)
     }
 }

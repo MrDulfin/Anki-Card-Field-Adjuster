@@ -3,14 +3,14 @@
 
 // use reqwest::{Client, Error};
 // use serde::{Deserialize, Serialize};
-use std::io::Error;
 use reqwest::Client;
+use std::io::Error;
 use tauri::Manager;
 
 use crate::requests::*;
 
-mod requests;
 mod edits;
+mod requests;
 mod responses;
 
 #[tauri::command]
@@ -19,19 +19,17 @@ async fn get_decks() -> Vec<String> {
 }
 #[tauri::command]
 async fn get_notes(deck: String) -> Result<(), String> {
-  _ = find_notes(&Client::new(), &deck, None, "".to_string());
-  Ok(())
+    _ = find_notes(&Client::new(), &deck, None, "".to_string());
+    Ok(())
 }
 
 #[tauri::command]
 async fn query(deck: String, cards_with: Option<String>, field: String, replace: String) -> String {
- requests::query_send(deck, cards_with, field, replace).await
+    requests::query_send(deck, cards_with, field, replace).await
 }
-
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-
     tauri::Builder::default()
         // .manage(MyState(text.into()))
         .setup(|app| {
@@ -45,5 +43,4 @@ async fn main() -> Result<(), Error> {
         .expect("error while running tauri application");
 
     Ok(())
-
 }
