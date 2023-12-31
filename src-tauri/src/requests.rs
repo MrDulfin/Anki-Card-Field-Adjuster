@@ -5,7 +5,7 @@ use std::time::Instant;
 
 use reqwest::{Client, Error};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 
 use itertools::Itertools;
 
@@ -54,6 +54,9 @@ pub struct Params {
     pub note: Option<NoteInput>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notes: Option<Vec<i64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "modelName")]
+    pub model_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -61,7 +64,6 @@ pub struct NoteInput {
     pub id: i64,
     pub fields: HashMap<String, String>,
 }
-
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct NoteInfo {
     #[serde(alias = "noteID")]
@@ -69,11 +71,24 @@ pub struct NoteInfo {
     #[serde(alias = "modelName")]
     model_name: String,
     tags: Vec<String>,
-    fields: Vec<String>,
+    fields: HashMap<String, String>,
 }
 impl NoteInfo {
     pub fn model(&self) -> &str {
         &self.model_name
+    }
+    pub fn fields(&self) -> &HashMap<String, String> {
+        &self.fields
+    }
+}
+#[derive(Serialize, Deserialize, Default, Debug)]
+pub struct Model {
+    name: String,
+    fields: Vec<String>,
+}
+impl Model {
+    pub fn from(name: String, fields: Vec<String>) -> Self {
+        Model { name, fields }
     }
 }
 
@@ -98,10 +113,10 @@ pub async fn get_req(
             let bun: DecksResponse = res.json().await.unwrap();
             Ok(PostResult::Decks(bun.result.unwrap()))
         }
-        // ReqType::ModelFields => {
-        //     let bun: DecksResponse = res.json().await.unwrap();
-        //     Ok(PostResult::ModelFields(bun.result.unwrap()))
-        // }
+        ReqType::ModelFields => {
+            let bun: DecksResponse = res.json().await.unwrap();
+            Ok(PostResult::ModelFields(bun.result.unwrap()))
+        }
         ReqType::Models => {
             let bun: ModelsResponse = res.json().await.unwrap();
             Ok(PostResult::Models(bun.result.unwrap()))
@@ -122,6 +137,7 @@ pub async fn query_send(
     cards_with: Option<String>,
     field: String,
     replace: String,
+    findreplace: bool,
 ) -> String {
     let client = Client::new();
 
@@ -135,28 +151,20 @@ pub async fn query_send(
         },
     )
     .await;
-
-    for card in cards {
-        let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
-        field2.insert(field.clone(), replace.clone());
-
-        let request: Request = Request {
-            action: "updateNoteFields".to_string(),
-            version: 6,
-            params: Some(Params {
-                note: Some(NoteInput {
-                    id: card,
-                    fields: field2,
-                }),
-                ..Default::default()
-            }),
-        };
-
-        let _ = get_req(ReqType::None, &client, request).await;
+    if findreplace {
+        todo!()
+    } else {
+        replace_whole_fields(&client, cards, &field, &replace)
+            .await
+            .unwrap()
     }
+
     "Done!".to_string()
 }
-pub async fn get_models(client: &Client, deck: &str) -> std::result::Result<Vec<String>, Error> {
+pub async fn get_models_from_deck(
+    client: &Client,
+    deck: &str,
+) -> std::result::Result<Vec<String>, Error> {
     let notes = find_notes(client, deck, None, "*".to_string()).await;
     let notes_input: Vec<NoteInput> = notes
         .iter()
@@ -269,7 +277,38 @@ pub async fn notes_info(
             .await
             .unwrap()
             .to_notes_info();
+
         for map in &bun {
+            let mut hash: HashMap<String, String> = HashMap::new();
+            map.get_key_value("fields")
+                .unwrap()
+                .1
+                .as_object()
+                .unwrap()
+                .iter()
+                .for_each(
+                    //This mess turns the Map into a Hashmap for the fields
+                    |(fieldname, value)| {
+                        hash.insert(
+                            fieldname.clone(),
+                            value
+                                .as_object()
+                                .iter()
+                                .map(|c| {
+                                    c.get_key_value("value")
+                                        .unwrap()
+                                        .1
+                                        .as_str()
+                                        .unwrap()
+                                        .to_string()
+                                })
+                                .collect::<Vec<String>>()
+                                .first()
+                                .unwrap()
+                                .clone(),
+                        );
+                    },
+                );
             notes2.push(NoteInfo {
                 //For some reason grabbing the note ID directly didn't work for me
                 note_id: map
@@ -299,19 +338,14 @@ pub async fn notes_info(
                     .iter()
                     .map(|tag| tag.as_str().unwrap().to_string())
                     .collect(),
-                fields: map
-                    .get_key_value("fields")
-                    .unwrap()
-                    .1
-                    .as_object()
-                    .unwrap()
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<String>>(),
+                fields: hash,
             })
         }
     }
     Ok(notes2)
+}
+pub async fn get_models() -> Vec<Model> {
+    todo!()
 }
 
 #[tokio::test]
@@ -334,11 +368,24 @@ async fn multi_notes_info() {
     .await;
     println!("{:?}ms elapsed", now.elapsed().as_millis());
 }
+#[tokio::test]
+async fn notes_info_() {
+    let now = Instant::now();
+    let a = Client::new();
+    let e = notes_info(
+        &a,
+        vec![NoteInput {
+            id: 1703791651837,
+            ..Default::default()
+        }],
+    )
+    .await;
+    println!("{:?}ms elapsed", now.elapsed().as_millis());
+}
 
 #[tokio::test]
 async fn modelstest() {
     let now = Instant::now();
-    let model = get_models(&Client::new(), "JP Mining Note").await;
-    dbg!(model);
-    println!("{:?}ms elapsed", now.elapsed().as_millis());
+    let _ = get_models_from_deck(&Client::new(), "JP Mining Note").await;
+    println!("{:?} seconds elapsed", now.elapsed().as_secs());
 }

@@ -24,9 +24,15 @@ async fn get_notes(deck: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn query(deck: String, cards_with: Option<String>, field: String, replace: String) -> String {
-    requests::query_send(deck, cards_with, field, replace).await
-}
+async fn query(
+    deck: String,
+    cards_with: Option<String>,
+    field: String,
+    replace: String,
+    findreplace: bool,
+) -> String {
+    requests::query_send(deck, cards_with, field, replace, findreplace).await
+} //TODO: add findreplace to the front end
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {

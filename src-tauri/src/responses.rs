@@ -62,6 +62,7 @@ pub enum PostResult {
     Decks(Vec<String>),
     Model(String),
     Models(Vec<String>),
+    ModelFields(Vec<String>),
     NotesInfo(Vec<serde_json::Map<String, serde_json::Value>>),
     NoteInfo(NoteInfoResponse),
     None,
