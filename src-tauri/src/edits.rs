@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Instant};
 
 use itertools::Itertools;
 use reqwest::{Client, Error};
@@ -37,24 +37,36 @@ pub async fn find_and_replace(
     replace_with: &str,
     in_field: &str,
     cards: Vec<i64>,
+    del_newline: bool,
+    as_space: Option<bool>
 ) -> Result<(), Error> {
     let notes_input: Vec<NoteInput> = cards
         .iter()
-        .map(|note| NoteInput {
+        .map(|note: &i64| NoteInput {
             id: *note,
             ..Default::default()
         })
         .collect();
 
-    let replace: Vec<String> = notes_info(client, notes_input)
+    let mut replace: Vec<String> = notes_info(client, notes_input)
         .await
         .unwrap()
         .iter()
-        .map(|note| {
-            let a = note.fields().get_key_value(in_field).unwrap();
-            a.1.replace(find, replace_with)
+        .map(|note: &crate::requests::NoteInfo| {
+            let a: (&String, &String) = note.fields().get_key_value(in_field).unwrap();
+                a.1.replace(find, replace_with)
         })
         .collect();
+
+        if del_newline {
+            let mut ny = Vec::new();
+            for r in &replace {
+                let bun = remove_newlines(r, as_space.unwrap()).await;
+                ny.push(bun);
+            }
+            replace.clear();
+            replace.append(&mut ny);
+        }
 
     dbg!(&replace);
 
@@ -77,8 +89,20 @@ pub async fn find_and_replace(
     }
     Ok(())
 }
+pub async fn remove_newlines(text: &str, as_space: bool) -> String {
+    if as_space {
+        text.replace("\n", " ")
+    }else {
+        text.replace("\n", "")
+    }
+}
+
+
+
 #[tokio::test]
 async fn findreplace_test() {
-    let cards = find_notes(&Client::new(), "Musical Notes", None, "*".to_string()).await;
-    _ = find_and_replace(&Client::new(), "b", "a", "Front", cards).await;
+    let now = Instant::now();
+    let cards = find_notes(&Client::new(), "JP Mining Note", None, "*".to_string()).await;
+    _ = find_and_replace(&Client::new(), "\n", "", "Sentence", cards, false, Some(false)).await;
+    println!("{:?} seconds", now.elapsed().as_secs());
 }

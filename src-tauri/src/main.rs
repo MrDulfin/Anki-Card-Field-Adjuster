@@ -23,17 +23,6 @@ async fn get_notes(deck: String) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
-async fn query(
-    deck: String,
-    cards_with: Option<String>,
-    field: String,
-    replace: String,
-    findreplace: bool,
-) -> String {
-    requests::query_send(deck, cards_with, field, replace, findreplace).await
-} //TODO: add findreplace to the front end
-
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tauri::Builder::default()
@@ -44,7 +33,7 @@ async fn main() -> Result<(), Error> {
             _ = window.set_title("MrDulfin's Anki Card Field Adjuster");
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_decks, query, get_notes])
+        .invoke_handler(tauri::generate_handler![get_decks, query_send, get_notes])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 

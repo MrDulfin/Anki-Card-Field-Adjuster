@@ -13,7 +13,7 @@ use crate::responses::{
     CardResponse, CardsResponse, DeckResponse, DecksResponse, ModelResponse, ModelsResponse,
     NoteInfoResponse, PostResult, Response as BigRes,
 };
-use crate::{edits::*, get_decks, get_notes};
+use crate::{edits::*, get_decks, get_notes, };
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -132,6 +132,7 @@ pub async fn get_req(
     }
 }
 
+#[tauri::command]
 pub async fn query_send(
     deck: String,
     cards_with: Option<String>,
@@ -158,7 +159,6 @@ pub async fn query_send(
             .await
             .unwrap()
     }
-
     "Done!".to_string()
 }
 pub async fn get_models_from_deck(
@@ -344,9 +344,38 @@ pub async fn notes_info(
     }
     Ok(notes2)
 }
-pub async fn get_models() -> Vec<Model> {
-    todo!()
+pub async fn get_models(client: &Client) -> Vec<Model> {
+    let request: Request = Request {
+        action: "modelNames".to_string(),
+        version: 6,
+        ..Default::default()
+    };
+    let model_names = get_req(ReqType::Models, client, request).await.unwrap().to_model_names();
+
+    get_model_fields(client, model_names).await
 }
+pub async fn get_model_fields(client: &Client, models: Vec<String>) -> Vec<Model> {
+    let mut models2: Vec<Model> = Vec::new();
+    for model in models {
+        let request: Request = Request {
+            action: "modelFieldNames".to_string(),
+            version: 6,
+            params: Some( Params {
+                model_name: Some(model.clone()),
+                ..Default::default()
+            })
+        };
+
+        let fields = get_req(ReqType::ModelFields, client, request).await.unwrap().to_model_fields();
+        models2.push(
+            Model { name: model, fields  }
+        )
+    }
+
+    dbg!(&models2);
+    models2
+}
+
 
 #[tokio::test]
 async fn multi_notes_info() {
@@ -387,5 +416,12 @@ async fn notes_info_() {
 async fn modelstest() {
     let now = Instant::now();
     let _ = get_models_from_deck(&Client::new(), "JP Mining Note").await;
+    println!("{:?} seconds elapsed", now.elapsed().as_secs());
+}
+
+#[tokio::test]
+async fn modelstest2() {
+    let now = Instant::now();
+    let _ = get_models(&Client::new()).await;
     println!("{:?} seconds elapsed", now.elapsed().as_secs());
 }

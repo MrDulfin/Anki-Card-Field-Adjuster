@@ -48,6 +48,12 @@ pub struct ModelsResponse {
     pub error: Option<String>,
 }
 impl Response for ModelsResponse {}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ModelFieldsResponse {
+    pub result: Option<Vec<String>>,
+    pub error: Option<String>,
+}
+impl Response for ModelFieldsResponse {}
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct NoteInfoResponse {
     pub result: Vec<serde_json::Map<String, serde_json::Value>>,
@@ -100,6 +106,18 @@ impl PostResult {
         match self {
             PostResult::NotesInfo(a) => a,
             _ => panic!("These aren't notes!"),
+        }
+    }
+    pub fn to_model_names(self) -> Vec<String> {
+        match self {
+            PostResult::Models(a) => a,
+            _ => panic!("Those aren't Model Names!")
+        }
+    }
+    pub fn to_model_fields(self) -> Vec<String> {
+        match self {
+            PostResult::ModelFields(a) => a,
+            _ => panic!("Those aren't Model Fields!")
         }
     }
 }
