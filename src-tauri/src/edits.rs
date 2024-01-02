@@ -1,12 +1,19 @@
-use std::{collections::HashMap, time::{Instant, Duration}, sync::{Arc, Mutex, atomic::{AtomicI32, Ordering}}};
 use core::future::poll_fn;
 use std::task::{Context, Poll};
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicI32, Ordering},
+        Arc, Mutex,
+    },
+    time::{Duration, Instant},
+};
 
 use itertools::Itertools;
 use reqwest::{Client, Error};
 
 use crate::requests::{
-    find_notes, get_req, notes_info, edit_cards, NoteInput, Params, ReqType, Request, poll_count,
+    edit_cards, find_notes, get_req, notes_info, poll_count, NoteInput, Params, ReqType, Request,
 };
 pub async fn replace_whole_fields(
     client: &Client,
@@ -96,8 +103,7 @@ pub async fn find_and_replace(
         };
         _ = get_req(ReqType::None, client, request).await;
 
-        processed_cards += 1;
-        count.store(processed_cards as i32, Ordering::Release);
+        count.store(i as i32, Ordering::Release);
     }
     Ok(())
 }
@@ -111,16 +117,27 @@ pub fn remove_newlines(text: &str, as_space: bool) -> String {
 
 #[tokio::test]
 async fn findreplace_test() {
-
     let arc = Arc::new(AtomicI32::from(0));
 
     let clone = arc.clone();
     let a = tokio::task::spawn(async move {
         let now = Instant::now();
-        let cards = find_notes(&Client::new(), "TheMoeWay Tango N5", None, "*".to_string()).await.unwrap();
+        let cards = find_notes(&Client::new(), "TheMoeWay Tango N5", None, "*".to_string())
+            .await
+            .unwrap();
         println!("got cards!");
-
-        _ = find_and_replace(&Client::new(), "", "", "Reading", cards, false, Some(false), clone).await;
+        //                                   replace nothing           do not remove newlines
+        _ = find_and_replace(
+            &Client::new(),
+            "",
+            "",
+            "Reading",
+            cards,
+            false,
+            Some(false),
+            clone,
+        )
+        .await;
         println!("{:?} seconds", now.elapsed().as_secs());
     });
 

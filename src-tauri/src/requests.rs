@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use std::ops::Deref;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicI32, Ordering};
-use std::thread::{self, sleep};
-use std::time::{Instant, Duration};
+use std::sync::{Arc, Mutex};
 use std::task::Poll;
+use std::thread::{self, sleep};
+use std::time::{Duration, Instant};
 
 use reqwest::{Client, Error};
 use serde::{Deserialize, Serialize};
@@ -136,8 +136,11 @@ pub async fn get_req(
     }
 }
 #[tauri::command]
-pub async fn check_for_cards(deck: String, cards_with: Option<String>, in_field: String) -> std::result::Result<Vec<i64>, String> {
-
+pub async fn check_for_cards(
+    deck: String,
+    cards_with: Option<String>,
+    in_field: String,
+) -> std::result::Result<Vec<i64>, String> {
     match find_notes(
         &Client::new(),
         &deck,
@@ -147,9 +150,10 @@ pub async fn check_for_cards(deck: String, cards_with: Option<String>, in_field:
             None => "".to_string(),
         },
     )
-    .await {
+    .await
+    {
         Ok(e) => Ok(e),
-        Err(_) => Err("No cards found!".to_string())
+        Err(_) => Err("No cards found!".to_string()),
     }
 }
 #[allow(clippy::too_many_arguments)]
@@ -170,31 +174,31 @@ pub async fn edit_cards(
     let count = counter.clone();
 
     let thread1 = tokio::task::spawn(async move {
-            if findreplace {
-                find_and_replace(
-                    &client,
-                    &find,
-                    &replace_with,
-                    &in_field,
-                    cards,
-                    del_newline,
-                    as_space,
-                    count,
-                )
-                .await
-                .unwrap();
-            } else {
-                replace_whole_fields(
-                    &client,
-                    cards,
-                    &in_field,
-                    &replace_with,
-                    del_newline,
-                    as_space,
-                )
-                .await
-                .unwrap()
-            }
+        if findreplace {
+            find_and_replace(
+                &client,
+                &find,
+                &replace_with,
+                &in_field,
+                cards,
+                del_newline,
+                as_space,
+                count,
+            )
+            .await
+            .unwrap();
+        } else {
+            replace_whole_fields(
+                &client,
+                cards,
+                &in_field,
+                &replace_with,
+                del_newline,
+                as_space,
+            )
+            .await
+            .unwrap()
+        }
     });
 
     let count = counter.clone();
@@ -203,7 +207,6 @@ pub async fn edit_cards(
             println!("Value: {:?}", poll_count(count.clone()).await);
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
-
     });
     thread1.await.unwrap();
 
@@ -213,7 +216,9 @@ pub async fn get_models_from_deck(
     client: &Client,
     deck: &str,
 ) -> std::result::Result<Vec<String>, Error> {
-    let notes = find_notes(client, deck, None, "*".to_string()).await.unwrap();
+    let notes = find_notes(client, deck, None, "*".to_string())
+        .await
+        .unwrap();
     let notes_input: Vec<NoteInput> = notes
         .iter()
         .map(|note: &i64| NoteInput {
@@ -507,4 +512,3 @@ async fn modelstest2() {
     let _ = get_models(&Client::new()).await;
     println!("{:?} seconds elapsed", now.elapsed().as_secs());
 }
-
