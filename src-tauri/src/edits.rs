@@ -1,16 +1,20 @@
-use std::{collections::HashMap, time::Instant};
+use std::{collections::HashMap, time::{Instant, Duration}, sync::{Arc, Mutex, atomic::{AtomicI32, Ordering}}};
+use core::future::poll_fn;
+use std::task::{Context, Poll};
 
 use itertools::Itertools;
 use reqwest::{Client, Error};
 
 use crate::requests::{
-    find_notes, get_req, notes_info, query_send, NoteInput, Params, ReqType, Request,
+    find_notes, get_req, notes_info, edit_cards, NoteInput, Params, ReqType, Request, poll_count,
 };
 pub async fn replace_whole_fields(
     client: &Client,
     cards: Vec<i64>,
     field: &str,
     replace: &str,
+    del_newline: bool,
+    as_space: Option<bool>,
 ) -> Result<(), Error> {
     for card in cards {
         let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
@@ -31,6 +35,7 @@ pub async fn replace_whole_fields(
     }
     Ok(())
 }
+#[allow(clippy::too_many_arguments)]
 pub async fn find_and_replace(
     client: &Client,
     find: &str,
@@ -38,7 +43,8 @@ pub async fn find_and_replace(
     in_field: &str,
     cards: Vec<i64>,
     del_newline: bool,
-    as_space: Option<bool>
+    as_space: Option<bool>,
+    count: Arc<AtomicI32>,
 ) -> Result<(), Error> {
     let notes_input: Vec<NoteInput> = cards
         .iter()
@@ -53,22 +59,25 @@ pub async fn find_and_replace(
         .unwrap()
         .iter()
         .map(|note: &crate::requests::NoteInfo| {
-            let a: (&String, &String) = note.fields().get_key_value(in_field).unwrap();
-                a.1.replace(find, replace_with)
+            let field: String = note
+                .fields()
+                .get_key_value(in_field)
+                .unwrap()
+                .1
+                .replace(find, replace_with);
+
+            if del_newline {
+                remove_newlines(&field, as_space.unwrap())
+            } else {
+                field
+            }
         })
         .collect();
 
-        if del_newline {
-            let mut ny = Vec::new();
-            for r in &replace {
-                let bun = remove_newlines(r, as_space.unwrap()).await;
-                ny.push(bun);
-            }
-            replace.clear();
-            replace.append(&mut ny);
-        }
-
     dbg!(&replace);
+
+    println!("for loop here");
+    let mut processed_cards = 0;
 
     for (i, card) in cards.into_iter().enumerate() {
         let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
@@ -86,23 +95,45 @@ pub async fn find_and_replace(
             }),
         };
         _ = get_req(ReqType::None, client, request).await;
+
+        processed_cards += 1;
+        count.store(processed_cards as i32, Ordering::Release);
     }
     Ok(())
 }
-pub async fn remove_newlines(text: &str, as_space: bool) -> String {
+pub fn remove_newlines(text: &str, as_space: bool) -> String {
     if as_space {
-        text.replace("\n", " ")
-    }else {
-        text.replace("\n", "")
+        text.replace("<br>", " ")
+    } else {
+        text.replace("<br>", "")
     }
 }
 
-
-
 #[tokio::test]
 async fn findreplace_test() {
-    let now = Instant::now();
-    let cards = find_notes(&Client::new(), "JP Mining Note", None, "*".to_string()).await;
-    _ = find_and_replace(&Client::new(), "\n", "", "Sentence", cards, false, Some(false)).await;
-    println!("{:?} seconds", now.elapsed().as_secs());
+
+    let arc = Arc::new(AtomicI32::from(0));
+
+    let clone = arc.clone();
+    let a = tokio::task::spawn(async move {
+        let now = Instant::now();
+        let cards = find_notes(&Client::new(), "TheMoeWay Tango N5", None, "*".to_string()).await.unwrap();
+        println!("got cards!");
+
+        _ = find_and_replace(&Client::new(), "", "", "Reading", cards, false, Some(false), clone).await;
+        println!("{:?} seconds", now.elapsed().as_secs());
+    });
+
+    let clone = arc.clone();
+    let b = tokio::task::spawn(async move {
+        loop {
+            if poll_count(clone.clone()).await >= 0 {
+                println!("Value: {:?}", poll_count(clone.clone()).await);
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+        }
+    });
+
+    a.await.unwrap();
+    b.await.unwrap();
 }

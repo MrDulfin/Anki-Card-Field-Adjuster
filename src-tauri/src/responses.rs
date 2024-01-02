@@ -111,13 +111,13 @@ impl PostResult {
     pub fn to_model_names(self) -> Vec<String> {
         match self {
             PostResult::Models(a) => a,
-            _ => panic!("Those aren't Model Names!")
+            _ => panic!("Those aren't Model Names!"),
         }
     }
     pub fn to_model_fields(self) -> Vec<String> {
         match self {
             PostResult::ModelFields(a) => a,
-            _ => panic!("Those aren't Model Fields!")
+            _ => panic!("Those aren't Model Fields!"),
         }
     }
 }

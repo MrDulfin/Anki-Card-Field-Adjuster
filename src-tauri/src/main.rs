@@ -26,14 +26,13 @@ async fn get_notes(deck: String) -> Result<(), String> {
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tauri::Builder::default()
-        // .manage(MyState(text.into()))
         .setup(|app| {
             let window = app.get_window("main").unwrap();
             _ = window.set_resizable(false);
             _ = window.set_title("MrDulfin's Anki Card Field Adjuster");
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_decks, query_send, get_notes])
+        .invoke_handler(tauri::generate_handler![get_decks, edit_cards, get_notes])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 

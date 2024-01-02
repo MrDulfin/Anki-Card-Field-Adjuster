@@ -1,7 +1,11 @@
 use std::collections::HashMap;
-use std::fmt::Result;
+
 use std::ops::Deref;
-use std::time::Instant;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicI32, Ordering};
+use std::thread::{self, sleep};
+use std::time::{Instant, Duration};
+use std::task::Poll;
 
 use reqwest::{Client, Error};
 use serde::{Deserialize, Serialize};
@@ -13,7 +17,7 @@ use crate::responses::{
     CardResponse, CardsResponse, DeckResponse, DecksResponse, ModelResponse, ModelsResponse,
     NoteInfoResponse, PostResult, Response as BigRes,
 };
-use crate::{edits::*, get_decks, get_notes, };
+use crate::{edits::*, get_decks, get_notes};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -131,41 +135,85 @@ pub async fn get_req(
         _ => Ok(PostResult::None),
     }
 }
-
 #[tauri::command]
-pub async fn query_send(
-    deck: String,
-    cards_with: Option<String>,
-    field: String,
-    replace: String,
-    findreplace: bool,
-) -> String {
-    let client = Client::new();
+pub async fn check_for_cards(deck: String, cards_with: Option<String>, in_field: String) -> std::result::Result<Vec<i64>, String> {
 
-    let cards = find_notes(
-        &client,
+    match find_notes(
+        &Client::new(),
         &deck,
-        Some(&field),
+        Some(&in_field),
         match cards_with {
             Some(e) => e,
             None => "".to_string(),
         },
     )
-    .await;
-    if findreplace {
-        todo!()
-    } else {
-        replace_whole_fields(&client, cards, &field, &replace)
-            .await
-            .unwrap()
+    .await {
+        Ok(e) => Ok(e),
+        Err(_) => Err("No cards found!".to_string())
     }
+}
+#[allow(clippy::too_many_arguments)]
+#[tauri::command]
+pub async fn edit_cards(
+    cards: Vec<i64>,
+    in_field: String,
+    replace_with: String,
+    findreplace: bool,
+    find: String,
+    del_newline: bool,
+    as_space: Option<bool>,
+) -> String {
+    let client = Client::new();
+
+    let counter = Arc::new(AtomicI32::from(0));
+
+    let count = counter.clone();
+
+    let thread1 = tokio::task::spawn(async move {
+            if findreplace {
+                find_and_replace(
+                    &client,
+                    &find,
+                    &replace_with,
+                    &in_field,
+                    cards,
+                    del_newline,
+                    as_space,
+                    count,
+                )
+                .await
+                .unwrap();
+            } else {
+                replace_whole_fields(
+                    &client,
+                    cards,
+                    &in_field,
+                    &replace_with,
+                    del_newline,
+                    as_space,
+                )
+                .await
+                .unwrap()
+            }
+    });
+
+    let count = counter.clone();
+    let poll_thread = tokio::task::spawn(async move {
+        loop {
+            println!("Value: {:?}", poll_count(count.clone()).await);
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+
+    });
+    thread1.await.unwrap();
+
     "Done!".to_string()
 }
 pub async fn get_models_from_deck(
     client: &Client,
     deck: &str,
 ) -> std::result::Result<Vec<String>, Error> {
-    let notes = find_notes(client, deck, None, "*".to_string()).await;
+    let notes = find_notes(client, deck, None, "*".to_string()).await.unwrap();
     let notes_input: Vec<NoteInput> = notes
         .iter()
         .map(|note: &i64| NoteInput {
@@ -202,7 +250,7 @@ pub async fn find_notes(
     deck: &str,
     field: Option<&str>,
     cards_with: String,
-) -> Vec<i64> {
+) -> std::result::Result<Vec<i64>, Error> {
     let mut cards = Vec::new();
     let bun = field.unwrap_or("You'll never see this");
     //get cards with field empty
@@ -255,7 +303,7 @@ pub async fn find_notes(
         };
         cards.append(&mut a);
     }
-    cards
+    Ok(cards)
 }
 pub async fn notes_info(
     client: &Client,
@@ -350,7 +398,10 @@ pub async fn get_models(client: &Client) -> Vec<Model> {
         version: 6,
         ..Default::default()
     };
-    let model_names = get_req(ReqType::Models, client, request).await.unwrap().to_model_names();
+    let model_names = get_req(ReqType::Models, client, request)
+        .await
+        .unwrap()
+        .to_model_names();
 
     get_model_fields(client, model_names).await
 }
@@ -360,23 +411,54 @@ pub async fn get_model_fields(client: &Client, models: Vec<String>) -> Vec<Model
         let request: Request = Request {
             action: "modelFieldNames".to_string(),
             version: 6,
-            params: Some( Params {
+            params: Some(Params {
                 model_name: Some(model.clone()),
                 ..Default::default()
-            })
+            }),
         };
 
-        let fields = get_req(ReqType::ModelFields, client, request).await.unwrap().to_model_fields();
-        models2.push(
-            Model { name: model, fields  }
-        )
+        let fields = get_req(ReqType::ModelFields, client, request)
+            .await
+            .unwrap()
+            .to_model_fields();
+        models2.push(Model {
+            name: model,
+            fields,
+        })
     }
 
     dbg!(&models2);
     models2
 }
+pub async fn poll_count(count: Arc<AtomicI32>) -> i32 {
+    count.load(Ordering::Acquire)
+}
 
+// #[tokio::test]
+// async fn polltest() {
+//     let arc = Arc::new(AtomicI32);
 
+//     let clone = arc.clone();
+//     let a = tokio::task::spawn(async move {
+//         let mut i = 0;
+//         loop {
+//             i += 1;
+//             // *clone.lock().unwrap() = i;
+//             tokio::time::sleep(Duration::from_millis(5)).await;
+//         }
+//     });
+
+//     let clone = arc.clone();
+//     let b = tokio::task::spawn(async move {
+//         loop {
+//             println!("Value: {:?}", poll_count(clone.clone()).await);
+//             tokio::time::sleep(Duration::from_millis(10)).await;
+//         }
+//     });
+
+//     a.await.unwrap();
+//     b.await.unwrap();
+// }
 #[tokio::test]
 async fn multi_notes_info() {
     let now = Instant::now();
@@ -425,3 +507,4 @@ async fn modelstest2() {
     let _ = get_models(&Client::new()).await;
     println!("{:?} seconds elapsed", now.elapsed().as_secs());
 }
+
