@@ -1,31 +1,19 @@
-use std::{
-    collections::HashMap,
-    sync::{
-        atomic::{AtomicI32, Ordering},
-        Arc, Mutex,
-    },
-    time::{Duration, Instant}, thread::sleep,
-};
+use std::{collections::HashMap, sync::atomic::Ordering};
 
-use itertools::Itertools;
 use reqwest::{Client, Error};
 
+use crate::requests::{get_req, notes_info, NoteInput, Params, ReqType, Request};
 use crate::CountState;
-use crate::requests::{
-    edit_cards, find_notes, get_req, notes_info, NoteInput, Params, ReqType, Request,
-};
 pub async fn replace_whole_fields(
     client: &Client,
     cards: Vec<i64>,
     field: &str,
     replace: &str,
-    del_newline: bool,
-    as_space: Option<bool>,
     count: tauri::State<'_, CountState>,
 ) -> Result<(), Error> {
-    let mut i = 0;
-    for card in cards {
+    for (i, card) in cards.iter().enumerate() {
         let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
+
         field2.insert(field.to_string(), replace.to_string());
 
         let request: Request = Request {
@@ -33,20 +21,19 @@ pub async fn replace_whole_fields(
             version: 6,
             params: Some(Params {
                 note: Some(NoteInput {
-                    id: card,
+                    id: card.to_owned(),
                     fields: field2,
                 }),
                 ..Params::default()
             }),
         };
         _ = get_req(ReqType::None, client, request).await;
-        i+=1;
-        count.0.store(i, Ordering::Release);
+        count.0.store(i as i32, Ordering::Release);
     }
     Ok(())
 }
 #[allow(clippy::too_many_arguments)]
-pub async fn find_and_replace (
+pub async fn find_and_replace(
     client: &Client,
     find: &str,
     replace_with: &str,
@@ -64,7 +51,7 @@ pub async fn find_and_replace (
         })
         .collect();
 
-    let mut replace: Vec<String> = notes_info(client, notes_input)
+    let replace: Vec<String> = notes_info(client, notes_input)
         .await
         .unwrap()
         .iter()
@@ -85,8 +72,6 @@ pub async fn find_and_replace (
         .collect();
 
     dbg!(&replace);
-
-    println!("for loop here");
 
     for (i, card) in cards.into_iter().enumerate() {
         let mut field2: HashMap<String, String> = HashMap::with_capacity(1);

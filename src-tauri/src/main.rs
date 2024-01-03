@@ -4,9 +4,9 @@
 use reqwest::Client;
 use std::io::Error;
 use std::sync::atomic::{AtomicI32, Ordering};
-use tauri::{Manager, Size, PhysicalSize, LogicalSize};
+use tauri::{LogicalSize, Manager, Size};
 
-use crate::requests::{get_models, deck_names, find_notes, edit_cards};
+use crate::requests::{check_for_cards, deck_names, edit_cards, find_notes, get_models};
 
 mod edits;
 mod requests;
@@ -20,7 +20,7 @@ async fn get_decks() -> Vec<String> {
 }
 #[tauri::command]
 async fn get_notes(deck: String) -> Result<(), String> {
-    _ = find_notes(&Client::new(), &deck, None, "".to_string());
+    _ = find_notes(&Client::new(), &deck, None, "".to_string()).await;
     Ok(())
 }
 
@@ -41,7 +41,7 @@ async fn poll_count(count: tauri::State<'_, CountState>) -> Result<i32, ()> {
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tauri::Builder::default()
-    .manage(CountState(AtomicI32::from(0)))
+        .manage(CountState(AtomicI32::from(0)))
         .setup(|app| {
             let window = app.get_window("main").unwrap();
             _ = window.set_resizable(false);
@@ -50,7 +50,14 @@ async fn main() -> Result<(), Error> {
             dbg!(&window.outer_size(), &window.inner_size());
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_decks, edit_cards, get_notes, find_models, poll_count])
+        .invoke_handler(tauri::generate_handler![
+            get_decks,
+            edit_cards,
+            get_notes,
+            find_models,
+            poll_count,
+            check_for_cards
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 

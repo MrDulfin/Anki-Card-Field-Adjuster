@@ -1,22 +1,12 @@
 use std::collections::HashMap;
 
-use std::ops::Deref;
-use std::sync::atomic::{AtomicI32, Ordering};
-use std::sync::{Arc, Mutex};
-use std::thread::{self, sleep};
-use std::time::{Duration, Instant};
-
 use reqwest::{Client, Error};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Map, Value};
-
-use itertools::Itertools;
 
 use crate::responses::{
-    CardResponse, CardsResponse, DeckResponse, DecksResponse, ModelResponse, ModelsResponse,
-    NoteInfoResponse, PostResult, Response as BigRes,
+    CardsResponse, DecksResponse, ModelFieldsResponse, ModelsResponse, NoteInfoResponse, PostResult,
 };
-use crate::{edits::*, get_decks, get_notes, CountState};
+use crate::{edits::*, CountState};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -77,9 +67,6 @@ pub struct NoteInfo {
     fields: HashMap<String, String>,
 }
 impl NoteInfo {
-    pub fn model(&self) -> &str {
-        &self.model_name
-    }
     pub fn fields(&self) -> &HashMap<String, String> {
         &self.fields
     }
@@ -90,13 +77,8 @@ pub struct Model {
     pub name: String,
     pub fields: Vec<String>,
 }
-impl Model {
-    pub fn from(name: String, fields: Vec<String>) -> Self {
-        Model { name, fields }
-    }
-}
-
 pub async fn get_req(
+    //TODO: allow the user to change server and port
     reqtype: ReqType,
     client: &Client,
     request: Request,
@@ -118,7 +100,7 @@ pub async fn get_req(
             Ok(PostResult::Decks(bun.result.unwrap()))
         }
         ReqType::ModelFields => {
-            let bun: DecksResponse = res.json().await.unwrap();
+            let bun: ModelFieldsResponse = res.json().await.unwrap();
             Ok(PostResult::ModelFields(bun.result.unwrap()))
         }
         ReqType::Models => {
@@ -169,64 +151,28 @@ pub async fn edit_cards(
     counter: tauri::State<'_, CountState>,
 ) -> Result<String, ()> {
     let client = Client::new();
-
-    // let counter = Arc::new(AtomicI32::from(0));
-
     let count = counter.clone();
 
-
-        if findreplace {
-            find_and_replace(
-                &client,
-                &find,
-                &replace_with,
-                &in_field,
-                cards,
-                del_newline,
-                as_space,
-                count,
-            )
-            .await
-            .unwrap();
-        } else {
-            replace_whole_fields(
-                &client,
-                cards,
-                &in_field,
-                &replace_with,
-                del_newline,
-                as_space,
-                count,
-            )
-            .await
-            .unwrap()
-        }
-
-    Ok("Done!".to_string())
-}
-pub async fn get_models_from_deck(
-    client: &Client,
-    deck: &str,
-) -> std::result::Result<Vec<String>, Error> {
-    let notes = find_notes(client, deck, None, "*".to_string())
+    if findreplace {
+        find_and_replace(
+            &client,
+            &find,
+            &replace_with,
+            &in_field,
+            cards,
+            del_newline,
+            as_space,
+            count,
+        )
         .await
         .unwrap();
-    let notes_input: Vec<NoteInput> = notes
-        .iter()
-        .map(|note: &i64| NoteInput {
-            id: *note,
-            ..Default::default()
-        })
-        .collect();
+    } else {
+        replace_whole_fields(&client, cards, &in_field, &replace_with, count)
+            .await
+            .unwrap()
+    }
 
-    let model_names: Vec<String> = notes_info(client, notes_input)
-        .await
-        .unwrap()
-        .iter()
-        .map(|note| note.model_name.clone())
-        .unique()
-        .collect();
-    Ok(model_names)
+    Ok("Done!".to_string())
 }
 pub async fn deck_names() -> Vec<String> {
     let client = Client::new();
@@ -390,7 +336,6 @@ pub async fn notes_info(
     Ok(notes2)
 }
 
-
 pub async fn get_models() -> Result<Vec<Model>, Error> {
     let client = &Client::new();
     let request: Request = Request {
@@ -429,54 +374,4 @@ pub async fn get_model_fields(client: &Client, models: Vec<String>) -> Vec<Model
 
     dbg!(&models2);
     models2
-}
-
-
-#[tokio::test]
-async fn multi_notes_info() {
-    let now = Instant::now();
-    let a = Client::new();
-    let e = notes_info(
-        &a,
-        vec![
-            NoteInput {
-                id: 1703791651837,
-                ..Default::default()
-            },
-            NoteInput {
-                id: 1455649815706,
-                ..Default::default()
-            },
-        ],
-    )
-    .await;
-    println!("{:?}ms elapsed", now.elapsed().as_millis());
-}
-#[tokio::test]
-async fn notes_info_() {
-    let now = Instant::now();
-    let a = Client::new();
-    let e = notes_info(
-        &a,
-        vec![NoteInput {
-            id: 1703791651837,
-            ..Default::default()
-        }],
-    )
-    .await;
-    println!("{:?}ms elapsed", now.elapsed().as_millis());
-}
-
-#[tokio::test]
-async fn modelstest() {
-    let now = Instant::now();
-    let _ = get_models_from_deck(&Client::new(), "JP Mining Note").await;
-    println!("{:?} seconds elapsed", now.elapsed().as_secs());
-}
-
-#[tokio::test]
-async fn modelstest2() {
-    let now = Instant::now();
-    let _ = get_models().await;
-    println!("{:?} seconds elapsed", now.elapsed().as_secs());
 }
