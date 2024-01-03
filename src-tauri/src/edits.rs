@@ -1,19 +1,18 @@
-use core::future::poll_fn;
-use std::task::{Context, Poll};
 use std::{
     collections::HashMap,
     sync::{
         atomic::{AtomicI32, Ordering},
         Arc, Mutex,
     },
-    time::{Duration, Instant},
+    time::{Duration, Instant}, thread::sleep,
 };
 
 use itertools::Itertools;
 use reqwest::{Client, Error};
 
+use crate::CountState;
 use crate::requests::{
-    edit_cards, find_notes, get_req, notes_info, poll_count, NoteInput, Params, ReqType, Request,
+    edit_cards, find_notes, get_req, notes_info, NoteInput, Params, ReqType, Request,
 };
 pub async fn replace_whole_fields(
     client: &Client,
@@ -22,7 +21,9 @@ pub async fn replace_whole_fields(
     replace: &str,
     del_newline: bool,
     as_space: Option<bool>,
+    count: tauri::State<'_, CountState>,
 ) -> Result<(), Error> {
+    let mut i = 0;
     for card in cards {
         let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
         field2.insert(field.to_string(), replace.to_string());
@@ -39,11 +40,13 @@ pub async fn replace_whole_fields(
             }),
         };
         _ = get_req(ReqType::None, client, request).await;
+        i+=1;
+        count.0.store(i, Ordering::Release);
     }
     Ok(())
 }
 #[allow(clippy::too_many_arguments)]
-pub async fn find_and_replace(
+pub async fn find_and_replace (
     client: &Client,
     find: &str,
     replace_with: &str,
@@ -51,7 +54,7 @@ pub async fn find_and_replace(
     cards: Vec<i64>,
     del_newline: bool,
     as_space: Option<bool>,
-    count: Arc<AtomicI32>,
+    count: tauri::State<'_, CountState>,
 ) -> Result<(), Error> {
     let notes_input: Vec<NoteInput> = cards
         .iter()
@@ -84,7 +87,6 @@ pub async fn find_and_replace(
     dbg!(&replace);
 
     println!("for loop here");
-    let mut processed_cards = 0;
 
     for (i, card) in cards.into_iter().enumerate() {
         let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
@@ -103,7 +105,7 @@ pub async fn find_and_replace(
         };
         _ = get_req(ReqType::None, client, request).await;
 
-        count.store(i as i32, Ordering::Release);
+        count.0.store(i as i32, Ordering::Release);
     }
     Ok(())
 }
@@ -115,42 +117,41 @@ pub fn remove_newlines(text: &str, as_space: bool) -> String {
     }
 }
 
-#[tokio::test]
-async fn findreplace_test() {
-    let arc = Arc::new(AtomicI32::from(0));
+// #[tokio::test]
+// async fn findreplace_test() {
+//     let arc = Arc::new(AtomicI32::from(0));
 
-    let clone = arc.clone();
-    let a = tokio::task::spawn(async move {
-        let now = Instant::now();
-        let cards = find_notes(&Client::new(), "TheMoeWay Tango N5", None, "*".to_string())
-            .await
-            .unwrap();
-        println!("got cards!");
-        //                                   replace nothing           do not remove newlines
-        _ = find_and_replace(
-            &Client::new(),
-            "",
-            "",
-            "Reading",
-            cards,
-            false,
-            Some(false),
-            clone,
-        )
-        .await;
-        println!("{:?} seconds", now.elapsed().as_secs());
-    });
+//     let clone = arc.clone();
+//     let a = tokio::task::spawn(async move {
+//         let now = Instant::now();
+//         let cards = find_notes(&Client::new(), "TheMoeWay Tango N5", None, "*".to_string())
+//             .await
+//             .unwrap();
+//         println!("got cards!");
+//         _ = find_and_replace(
+//             &Client::new(),
+//             "",
+//             "",
+//             "Reading",
+//             cards,
+//             false,
+//             Some(false),
+//             count,
+//         )
+//         .await;
+//         println!("{:?} seconds", now.elapsed().as_secs());
+//     });
 
-    let clone = arc.clone();
-    let b = tokio::task::spawn(async move {
-        loop {
-            if poll_count(clone.clone()).await >= 0 {
-                println!("Value: {:?}", poll_count(clone.clone()).await);
-                tokio::time::sleep(Duration::from_millis(100)).await;
-            }
-        }
-    });
+//     let clone = arc.clone();
+//     let b = tokio::task::spawn(async move {
+//         loop {
+//             if poll_count(clone.clone()).await >= 0 {
+//                 println!("Value: {:?}", poll_count(clone.clone()).await);
+//                 tokio::time::sleep(Duration::from_millis(200)).await;
+//             }
+//         }
+//     });
 
-    a.await.unwrap();
-    b.await.unwrap();
-}
+//     a.await.unwrap();
+//     b.await.unwrap();
+// }

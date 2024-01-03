@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::{Arc, Mutex};
-use std::task::Poll;
 use std::thread::{self, sleep};
 use std::time::{Duration, Instant};
 
@@ -17,7 +16,7 @@ use crate::responses::{
     CardResponse, CardsResponse, DeckResponse, DecksResponse, ModelResponse, ModelsResponse,
     NoteInfoResponse, PostResult, Response as BigRes,
 };
-use crate::{edits::*, get_decks, get_notes};
+use crate::{edits::*, get_decks, get_notes, CountState};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -85,10 +84,11 @@ impl NoteInfo {
         &self.fields
     }
 }
+
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct Model {
-    name: String,
-    fields: Vec<String>,
+    pub name: String,
+    pub fields: Vec<String>,
 }
 impl Model {
     pub fn from(name: String, fields: Vec<String>) -> Self {
@@ -166,14 +166,15 @@ pub async fn edit_cards(
     find: String,
     del_newline: bool,
     as_space: Option<bool>,
-) -> String {
+    counter: tauri::State<'_, CountState>,
+) -> Result<String, ()> {
     let client = Client::new();
 
-    let counter = Arc::new(AtomicI32::from(0));
+    // let counter = Arc::new(AtomicI32::from(0));
 
     let count = counter.clone();
 
-    let thread1 = tokio::task::spawn(async move {
+
         if findreplace {
             find_and_replace(
                 &client,
@@ -195,22 +196,13 @@ pub async fn edit_cards(
                 &replace_with,
                 del_newline,
                 as_space,
+                count,
             )
             .await
             .unwrap()
         }
-    });
 
-    let count = counter.clone();
-    let poll_thread = tokio::task::spawn(async move {
-        loop {
-            println!("Value: {:?}", poll_count(count.clone()).await);
-            tokio::time::sleep(Duration::from_millis(10)).await;
-        }
-    });
-    thread1.await.unwrap();
-
-    "Done!".to_string()
+    Ok("Done!".to_string())
 }
 pub async fn get_models_from_deck(
     client: &Client,
@@ -397,7 +389,10 @@ pub async fn notes_info(
     }
     Ok(notes2)
 }
-pub async fn get_models(client: &Client) -> Vec<Model> {
+
+
+pub async fn get_models() -> Result<Vec<Model>, Error> {
+    let client = &Client::new();
     let request: Request = Request {
         action: "modelNames".to_string(),
         version: 6,
@@ -408,7 +403,7 @@ pub async fn get_models(client: &Client) -> Vec<Model> {
         .unwrap()
         .to_model_names();
 
-    get_model_fields(client, model_names).await
+    Ok(get_model_fields(client, model_names).await)
 }
 pub async fn get_model_fields(client: &Client, models: Vec<String>) -> Vec<Model> {
     let mut models2: Vec<Model> = Vec::new();
@@ -435,35 +430,8 @@ pub async fn get_model_fields(client: &Client, models: Vec<String>) -> Vec<Model
     dbg!(&models2);
     models2
 }
-pub async fn poll_count(count: Arc<AtomicI32>) -> i32 {
-    count.load(Ordering::Acquire)
-}
 
-// #[tokio::test]
-// async fn polltest() {
-//     let arc = Arc::new(AtomicI32);
 
-//     let clone = arc.clone();
-//     let a = tokio::task::spawn(async move {
-//         let mut i = 0;
-//         loop {
-//             i += 1;
-//             // *clone.lock().unwrap() = i;
-//             tokio::time::sleep(Duration::from_millis(5)).await;
-//         }
-//     });
-
-//     let clone = arc.clone();
-//     let b = tokio::task::spawn(async move {
-//         loop {
-//             println!("Value: {:?}", poll_count(clone.clone()).await);
-//             tokio::time::sleep(Duration::from_millis(10)).await;
-//         }
-//     });
-
-//     a.await.unwrap();
-//     b.await.unwrap();
-// }
 #[tokio::test]
 async fn multi_notes_info() {
     let now = Instant::now();
@@ -509,6 +477,6 @@ async fn modelstest() {
 #[tokio::test]
 async fn modelstest2() {
     let now = Instant::now();
-    let _ = get_models(&Client::new()).await;
+    let _ = get_models().await;
     println!("{:?} seconds elapsed", now.elapsed().as_secs());
 }

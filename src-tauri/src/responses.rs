@@ -66,24 +66,13 @@ pub enum PostResult {
     Card(i64),
     Deck(String),
     Decks(Vec<String>),
-    Model(String),
     Models(Vec<String>),
     ModelFields(Vec<String>),
     NotesInfo(Vec<serde_json::Map<String, serde_json::Value>>),
-    NoteInfo(NoteInfoResponse),
     None,
 }
 #[allow(dead_code)]
 impl PostResult {
-    pub fn is_none(&self) -> bool {
-        matches!(self, PostResult::None)
-    }
-    pub fn is_cards(&self) -> bool {
-        matches!(self, PostResult::Cards(_))
-    }
-    pub fn is_decks(&self) -> bool {
-        matches!(self, PostResult::Decks(_))
-    }
     pub fn to_cards(self) -> Vec<i64> {
         match self {
             PostResult::Cards(a) => a,
@@ -121,23 +110,4 @@ impl PostResult {
         }
     }
 }
-impl From<Vec<i64>> for PostResult {
-    fn from(value: Vec<i64>) -> Self {
-        PostResult::Cards(value)
-    }
-}
-impl From<i64> for PostResult {
-    fn from(value: i64) -> Self {
-        PostResult::Card(value)
-    }
-}
-impl From<Vec<String>> for PostResult {
-    fn from(value: Vec<String>) -> Self {
-        PostResult::Decks(value)
-    }
-}
-impl From<String> for PostResult {
-    fn from(value: String) -> Self {
-        PostResult::Deck(value)
-    }
-}
+

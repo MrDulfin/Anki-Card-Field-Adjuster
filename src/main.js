@@ -5,6 +5,8 @@ const invoke = window.__TAURI__.invoke;
 
 window.addEventListener("load", get_decks);
 window.addEventListener("load", toggleShow);
+window.addEventListener("load", poll);
+window.addEventListener("load", get_models);
 // document.getElementById('submitQuery').addEventListener("click", sendQuery);
 
 const formRes = document.getElementById('query');
@@ -13,6 +15,41 @@ var query_deck;
 
 var decks_got = false;
 var deck_chosen = false;
+
+model_count = 0;
+async function get_models() {
+
+  invoke('find_models').then((models) => {
+    models.forEach(model => {
+      let list = document.getElementById("dropList2")
+      let btn = document.createElement('button');
+
+      btn.innerText = model[0];
+      btn.setAttribute('id', model[0]);
+      btn.setAttribute('class', "models");
+      // btn.addEventListener("click", inputDeck);
+      list.appendChild(btn);
+      console.log(model[0]);
+    })
+  })
+  // var results = [];
+
+  // for (var i = 0; i < arr1.length; i++) {
+  //     if (arr2.indexOf(arr1[i]) !== -1) {
+  //         results.push(arr1[i]);
+  //     }
+  // }
+}
+
+async function poll() {
+  function lop() {
+    invoke('poll_count').then((count) => {
+      console.log(count);
+    } )
+    setTimeout(executeFunction, 5000);
+  }
+  lop();
+}
 
 async function get_decks() {
   if(decks_got == false) {
@@ -40,14 +77,14 @@ function listDecks(decks) {
     btn.addEventListener("click", inputDeck);
     list.appendChild(btn);
     console.log(deck)
-    
+
   });
 }
 
 let selectedDeck = null;
-function inputDeck(deck) { 
+function inputDeck(deck) {
     query_deck = deck.target.id;
-    console.log("deck selected: " + query_deck); 
+    console.log("deck selected: " + query_deck);
 
     if (selectedDeck){
       selectedDeck.classList.remove("selected");
@@ -55,13 +92,14 @@ function inputDeck(deck) {
 
     deck.target.classList.add("selected");
 
-    selectedDeck = deck.target; 
-    deck_chosen = true; 
+    selectedDeck = deck.target;
+    deck_chosen = true;
 }
 /* When the user clicks on the button,
 toggle between hiding and showing the dropdown content */
 function toggleShow() {
   document.getElementById("dropList").classList.toggle("show");
+  document.getElementById("dropList2").classList.toggle("show");
 }
 
 function showError(error) {
@@ -75,7 +113,7 @@ document.getElementById('query').addEventListener("submit", function(event) {
   var query_cards_with = formRes.elements['cardsWith'].value;
   var query_field = formRes.elements['field'].value;
   var query_replace = formRes.elements['replaceWith'].value;
-  
+
   if (query_deck && query_field) {
     if(query_cards_with == "") {
       query_cards_with = "";
@@ -99,7 +137,7 @@ document.getElementById('query').addEventListener("submit", function(event) {
     showError("Pick a Deck");
   }else if(!query_field){
     showError("You cannot leave the field empty");
-    document.getElementById("field").style.borderColor = "#8B0000"; 
+    document.getElementById("field").style.borderColor = "#8B0000";
   }
 });
 

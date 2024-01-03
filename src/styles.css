@@ -84,22 +84,30 @@ button {
   outline: none;
 }
 
+#decks {
+  left: 15%;
+}
+#models {
+  left: 40%;
+}
 .dropDownContainer {
   position: absolute;
-  display: inline-block;
+  display: flex;
   align-items: center;
-  left: 25%;
-  top: 15%;
-  /* bring your own prefixes */
+  top: 25%;
   transform: translate(-50%, 0%);
 }
 
 .dropListClass {
   position: absolute;
+  top: 150%;
   display: none;
+
 }
 .dropListClass button {
   display: block;
+  transform: translate(-50%, 0%);
+
 }
 .dropListClass button :hover {
   color: darkslateblue;

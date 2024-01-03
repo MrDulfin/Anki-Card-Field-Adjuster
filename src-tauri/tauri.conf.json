@@ -7,7 +7,7 @@
     "withGlobalTauri": true
   },
   "package": {
-    "productName": "MrDulfins Anki Card Field Adjuster",
+    "productName": "Anki Card Field Adjuster",
     "version": "1.0.1"
   },
   "tauri": {
