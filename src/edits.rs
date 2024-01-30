@@ -1,16 +1,21 @@
+use std::sync::atomic::AtomicI32;
+use std::sync::Arc;
+use std::time::Instant;
 use std::{collections::HashMap, sync::atomic::Ordering};
 
 use reqwest::{Client, Error};
 
-use crate::requests::{get_req, notes_info, NoteInput, Params, ReqType, Request};
+use crate::requests::{find_notes, get_req, notes_info, NoteInput, Params, ReqType, Request};
 use crate::CountState;
 pub async fn replace_whole_fields(
     client: &Client,
     cards: Vec<i64>,
     field: &str,
     replace: &str,
-    count: tauri::State<'_, CountState>,
+    count: Arc<CountState>,
 ) -> Result<(), Error> {
+    dbg!("I am NOT FindReplacing");
+    dbg!(&client, &field, &replace, &count);
     for (i, card) in cards.iter().enumerate() {
         let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
 
@@ -41,8 +46,9 @@ pub async fn find_and_replace(
     cards: Vec<i64>,
     del_newline: bool,
     as_space: Option<bool>,
-    count: tauri::State<'_, CountState>,
+    count: Arc<CountState>,
 ) -> Result<(), Error> {
+    dbg!("I am find and replacing");
     let notes_input: Vec<NoteInput> = cards
         .iter()
         .map(|note: &i64| NoteInput {
@@ -71,7 +77,7 @@ pub async fn find_and_replace(
         })
         .collect();
 
-    dbg!(&replace);
+    // dbg!(&replace);
 
     for (i, card) in cards.into_iter().enumerate() {
         let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
@@ -102,41 +108,32 @@ pub fn remove_newlines(text: &str, as_space: bool) -> String {
     }
 }
 
-// #[tokio::test]
-// async fn findreplace_test() {
-//     let arc = Arc::new(AtomicI32::from(0));
+#[tokio::test]
+async fn findreplace_test() {
+    let arc = Arc::new(CountState(AtomicI32::from(0)));
 
-//     let clone = arc.clone();
-//     let a = tokio::task::spawn(async move {
-//         let now = Instant::now();
-//         let cards = find_notes(&Client::new(), "TheMoeWay Tango N5", None, "*".to_string())
-//             .await
-//             .unwrap();
-//         println!("got cards!");
-//         _ = find_and_replace(
-//             &Client::new(),
-//             "",
-//             "",
-//             "Reading",
-//             cards,
-//             false,
-//             Some(false),
-//             count,
-//         )
-//         .await;
-//         println!("{:?} seconds", now.elapsed().as_secs());
-//     });
+    let clone = arc.clone();
+    let a = tokio::task::spawn(async move {
+        let now = Instant::now();
+        let cards = find_notes(&Client::new(), "Musical Notes", None, "*".to_string())
+            .await
+            .unwrap();
+        println!("got cards!");
+        _ = find_and_replace(
+            &Client::new(),
+            "b",
+            "a",
+            "Front",
+            cards,
+            false,
+            Some(false),
+            clone,
+        )
+        .await;
+        println!("{:?} seconds", now.elapsed().as_secs());
+    });
 
-//     let clone = arc.clone();
-//     let b = tokio::task::spawn(async move {
-//         loop {
-//             if poll_count(clone.clone()).await >= 0 {
-//                 println!("Value: {:?}", poll_count(clone.clone()).await);
-//                 tokio::time::sleep(Duration::from_millis(200)).await;
-//             }
-//         }
-//     });
+    let clone = arc.clone();
 
-//     a.await.unwrap();
-//     b.await.unwrap();
-// }
+    a.await.unwrap();
+}

@@ -23,17 +23,6 @@
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
 .row {
   display: flex;
   justify-content: center;
@@ -89,6 +78,10 @@ button {
 }
 #models {
   left: 40%;
+  /* width: 50%; */
+}
+#modelsList {
+  flex-direction: row;
 }
 .dropDownContainer {
   position: absolute;
@@ -101,12 +94,10 @@ button {
 .dropListClass {
   position: absolute;
   top: 150%;
-  display: none;
-
 }
 .dropListClass button {
   display: block;
-  transform: translate(-50%, 0%);
+  /* transform: translate(-50%, 0%); */
 
 }
 .dropListClass button :hover {
@@ -141,11 +132,12 @@ button {
 #error {
   position: absolute;
   color: rgb(211, 95, 95);
-  left: 50%;
-  top: 80%;
+  left: 75%;
+  top: 85%;
   transform: translate(-50%, 0%);
   width: 90%;
   line-height: 50px;
+  font-size: 18px;
 }
 .selected {
   background-color: #646cff;
@@ -179,9 +171,25 @@ button {
 #wait {
   position: absolute;
   top: 85%;
-  left: 45%;
+  left: 75%;
   transform: translate(-50%, 0%);
   font-size: 3em;
   color: greenyellow;
   /* display: none; */
+}
+
+#server_port {
+
+  display: grid;
+  grid-template-columns: repeat(2, 150px [col-start]);
+  position: absolute;
+  top: 12%;
+  left: 8%;
+  width: 4em;
+}
+#server input {
+  width: 50%;
+}
+#port input {
+  width: 25%;
 }

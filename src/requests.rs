@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+// use std::error::Error;
+use std::sync::Arc;
 
 use reqwest::{Client, Error};
 use serde::{Deserialize, Serialize};
@@ -92,8 +94,11 @@ pub async fn get_req(
     match reqtype {
         ReqType::None => Ok(PostResult::None),
         ReqType::Cards => {
-            let bun: CardsResponse = res.json().await.unwrap();
-            Ok(PostResult::Cards(bun.result.unwrap()))
+            let bun: CardsResponse = res.json().await?;
+            Ok(PostResult::Cards( match bun.result {
+                Some(e) => e,
+                None => Vec::<i64>::new()
+            }))
         }
         ReqType::Decks => {
             let bun: DecksResponse = res.json().await.unwrap();
@@ -117,20 +122,17 @@ pub async fn get_req(
         _ => Ok(PostResult::None),
     }
 }
-#[tauri::command]
+
 pub async fn check_for_cards(
     deck: String,
-    cards_with: Option<String>,
+    cards_with: String,
     in_field: String,
 ) -> std::result::Result<Vec<i64>, String> {
     match find_notes(
         &Client::new(),
         &deck,
         Some(&in_field),
-        match cards_with {
-            Some(e) => e,
-            None => "".to_string(),
-        },
+        cards_with
     )
     .await
     {
@@ -139,7 +141,6 @@ pub async fn check_for_cards(
     }
 }
 #[allow(clippy::too_many_arguments)]
-#[tauri::command]
 pub async fn edit_cards(
     cards: Vec<i64>,
     in_field: String,
@@ -148,7 +149,7 @@ pub async fn edit_cards(
     find: String,
     del_newline: bool,
     as_space: Option<bool>,
-    counter: tauri::State<'_, CountState>,
+    counter: Arc<CountState>
 ) -> Result<String, ()> {
     let client = Client::new();
     let count = counter.clone();
@@ -219,7 +220,7 @@ pub async fn find_notes(
             version: 6,
             params: Some(Params {
                 cards: None,
-                query: Some(format!(r#"deck:"{deck}" {bun}:{cards_with}"#).to_string()),
+                query: Some(format!(r#"deck:"{deck}" {bun}:*{cards_with}*"#).to_string()),
                 ..Params::default()
             }),
         };
@@ -278,7 +279,7 @@ pub async fn notes_info(
                 .unwrap()
                 .iter()
                 .for_each(
-                    //This mess turns the Map into a Hashmap for the fields
+                    //This turns the Map into a Hashmap for the fields
                     |(fieldname, value)| {
                         hash.insert(
                             fieldname.clone(),
@@ -372,6 +373,6 @@ pub async fn get_model_fields(client: &Client, models: Vec<String>) -> Vec<Model
         })
     }
 
-    dbg!(&models2);
+    // dbg!(&models2);
     models2
 }
