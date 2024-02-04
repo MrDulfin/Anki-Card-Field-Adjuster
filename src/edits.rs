@@ -13,6 +13,7 @@ pub async fn replace_whole_fields(
     field: &str,
     replace: &str,
     count: Arc<CountState>,
+    server_port: (&str, &str)
 ) -> Result<(), Error> {
     dbg!("I am NOT FindReplacing");
     dbg!(&client, &field, &replace, &count);
@@ -32,7 +33,7 @@ pub async fn replace_whole_fields(
                 ..Params::default()
             }),
         };
-        _ = get_req(ReqType::None, client, request).await;
+        _ = get_req(ReqType::None, client, request, server_port).await;
         count.0.store(i as i32, Ordering::Release);
     }
     Ok(())
@@ -47,6 +48,7 @@ pub async fn find_and_replace(
     del_newline: bool,
     as_space: Option<bool>,
     count: Arc<CountState>,
+    server_port: (&str, &str)
 ) -> Result<(), Error> {
     dbg!("I am find and replacing");
     let notes_input: Vec<NoteInput> = cards
@@ -57,7 +59,7 @@ pub async fn find_and_replace(
         })
         .collect();
 
-    let replace: Vec<String> = notes_info(client, notes_input)
+    let replace: Vec<String> = notes_info(client, notes_input, server_port)
         .await
         .unwrap()
         .iter()
@@ -94,7 +96,7 @@ pub async fn find_and_replace(
                 ..Params::default()
             }),
         };
-        _ = get_req(ReqType::None, client, request).await;
+        _ = get_req(ReqType::None, client, request, server_port).await;
 
         count.0.store(i as i32, Ordering::Release);
     }
@@ -108,32 +110,32 @@ pub fn remove_newlines(text: &str, as_space: bool) -> String {
     }
 }
 
-#[tokio::test]
-async fn findreplace_test() {
-    let arc = Arc::new(CountState(AtomicI32::from(0)));
+// #[tokio::test]
+// async fn findreplace_test() {
+//     let arc = Arc::new(CountState(AtomicI32::from(0)));
 
-    let clone = arc.clone();
-    let a = tokio::task::spawn(async move {
-        let now = Instant::now();
-        let cards = find_notes(&Client::new(), "Musical Notes", None, "*".to_string())
-            .await
-            .unwrap();
-        println!("got cards!");
-        _ = find_and_replace(
-            &Client::new(),
-            "b",
-            "a",
-            "Front",
-            cards,
-            false,
-            Some(false),
-            clone,
-        )
-        .await;
-        println!("{:?} seconds", now.elapsed().as_secs());
-    });
+//     let clone = arc.clone();
+//     let a = tokio::task::spawn(async move {
+//         let now = Instant::now();
+//         let cards = find_notes(&Client::new(), "Musical Notes", None, "*".to_string())
+//             .await
+//             .unwrap();
+//         println!("got cards!");
+//         _ = find_and_replace(
+//             &Client::new(),
+//             "b",
+//             "a",
+//             "Front",
+//             cards,
+//             false,
+//             Some(false),
+//             clone,
+//         )
+//         .await;
+//         println!("{:?} seconds", now.elapsed().as_secs());
+//     });
 
-    let clone = arc.clone();
+//     let clone = arc.clone();
 
-    a.await.unwrap();
-}
+//     a.await.unwrap();
+// }

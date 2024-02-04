@@ -76,27 +76,40 @@ button {
 #decks {
   left: 15%;
 }
+#decks button {
+  left: 10%;
+  top: 25%;
+}
+#decksList {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: 125px;
+}
 #models {
   left: 40%;
-  /* width: 50%; */
 }
 #modelsList {
-  flex-direction: row;
+  left: -25%;
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(2, 125px [col-start]);
 }
 .dropDownContainer {
   position: absolute;
-  display: flex;
-  align-items: center;
-  top: 25%;
+  top: 15%;
   transform: translate(-50%, 0%);
 }
 
 .dropListClass {
+  overflow-y: scroll;
+  height: 400px;
   position: absolute;
   top: 150%;
+  /* padding: 5px; */
 }
 .dropListClass button {
   display: block;
+  gap: 50px;
   /* transform: translate(-50%, 0%); */
 
 }
@@ -133,16 +146,16 @@ button {
   position: absolute;
   color: rgb(211, 95, 95);
   left: 75%;
-  top: 85%;
+  top: 90%;
   transform: translate(-50%, 0%);
   width: 90%;
-  line-height: 50px;
+  /* line-height: 50px; */
   font-size: 18px;
 }
 .selected {
   background-color: #646cff;
   color: #2f2f2f;
-  font-weight: bold;
+  /* font-weight: bold; */
 }
 .selected:hover {
   background-color: #898fff;
@@ -170,7 +183,7 @@ button {
 }
 #wait {
   position: absolute;
-  top: 85%;
+  top: 90%;
   left: 75%;
   transform: translate(-50%, 0%);
   font-size: 3em;
@@ -179,7 +192,6 @@ button {
 }
 
 #server_port {
-
   display: grid;
   grid-template-columns: repeat(2, 150px [col-start]);
   position: absolute;
@@ -192,4 +204,12 @@ button {
 }
 #port input {
   width: 25%;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  background-color: #2f2f2f;
+}
+::-webkit-scrollbar-thumb {
+  background: #4c4a4e;
 }

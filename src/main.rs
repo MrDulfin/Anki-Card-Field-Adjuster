@@ -14,7 +14,8 @@ use serde::de::value;
 use std::io::Error;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
-use std::thread::spawn;
+use std::thread::{sleep, spawn};
+use std::time::Duration;
 
 use crate::requests::{check_for_cards, deck_names, edit_cards, find_notes, get_models};
 
@@ -25,6 +26,8 @@ mod responses;
 #[derive(Debug)]
 pub struct CountState(pub AtomicI32);
 
+
+
 fn main() {
     dioxus_desktop::launch_cfg(app, Config::default()
         .with_window(WindowBuilder::new()
@@ -34,21 +37,30 @@ fn main() {
     ));
 }
 
-static COUNT: Atom<(i32, i32)> = Atom(|_| (0,0));
-static C: Atom<i32> = Atom(|_| 0);
+static COUNT1: Atom<i32> = Atom(|_| 0);
+static COUNT2: Atom<i32> = Atom(|_| 0);
+
+// static DECK: Atom<String> = Atom(|_| String::new());
+
+// static SERVER: Atom<String> = Atom(|_| "127.0.0.1".to_string());
+// static PORT: Atom<String> = Atom(|_| "8765".to_string());
+
 
 #[allow(clippy::redundant_closure)]
 fn app(cx: Scope) -> Element {
     use_init_atom_root(cx);
 
     let deck_picked = use_state(cx, || String::new());
+    let model_picked = use_state(cx, || String::new());
     let model_fields = use_state(cx, || Vec::<String>::new());
-    let wait_num1 = use_state(cx, || AtomicI32::from(0));
-    let wait_num2 = use_state(cx, || AtomicI32::from(0));
     let error_message = use_state(cx, || String::new());
-    let mut server = "127.0.0.1".to_owned();
-    let mut port = 8765;
+    let mut server = use_state(cx, || "127.0.0.1".to_owned());
+    let mut port = use_state(cx, || "8765");
+    let decks = get_decks((server.get(),port.get()));
+    let models = find_models((server.get(),port.get()));
 
+    let count1: &UseState<i32> = use_state(cx, || 0);
+    let count2: &UseState<i32> = use_state(cx, || 0);
 
 
 
@@ -61,23 +73,31 @@ fn app(cx: Scope) -> Element {
             "If you have media attached to your anki decks:\nAnki > Export > Fomat: "
         span { class: "code", ".colp" }
             "✅Include Media" }
-        div {
-            id: "server_port",
-            div {
-                id: "server",
-                p { "server" }
-                input {
-                    value: "127.0.0.1"
-                }
-            }
-            div {
-                id: "port",
-                p { "port" }
-                input {
-                    value: "8765"
-                }
-            }
-        }
+        // div {
+        //     id: "server_port",
+        //     div {
+        //         id: "server",
+        //         p { "server" }
+        //         input {
+        //             value: "127.0.0.1",
+        //             oninput: move |ev| {
+        //                 use_set(cx, &SERVER)("{ev}".to_string());
+        //                 dbg!(use_read(cx, &SERVER));
+        //             }
+        //         }
+        //     }
+        //     div {
+        //         id: "port",
+        //         p { "port" }
+        //         input {
+        //             value: "8765",
+        //             oninput: move |ev| {
+        //                 use_set(cx, &PORT)("{ev}".to_string());
+        //                 dbg!(use_read(cx, &PORT));
+        //             }
+        //         }
+        //     }
+        // }
 
         div {
             id: "Confetto",
@@ -87,15 +107,25 @@ fn app(cx: Scope) -> Element {
                 h2 { "Pick a Deck: "}
                 div {
                     id: "decksList",
-                class: "dropListClass",
-                get_decks().iter().map(|deck| {
+                    class: "dropListClass",
+                decks.iter().map(|deck| {
+                    // let deck_picked = use_set(cx, &DECK);
                     let name = deck.clone();
                     rsx!(
                         button {
-                            class: "decks, show",
-                            id: "{deck}",
-                            onclick: move |_| { deck_picked.set(name.to_string()); println!("{name}"); },
-                            "{deck}"
+                            class: {
+                                if deck_picked.get() == &name {
+                                    "decks, selected"
+                                }else {
+                                    "decks"
+                                }
+                            },
+                            id: "{name}",
+                            onclick: move |_| {
+                                deck_picked.set(name.to_string());
+
+                            },
+                            "{name}"
                         }
                     )})
                 }
@@ -108,14 +138,22 @@ fn app(cx: Scope) -> Element {
                 div {
                     id: "modelsList",
                     class: "dropListClass",
-                    find_models().iter().map(|model| {
+                    models.iter().map(|model| {
                         let name = model.0.clone();
                         let fields = model.1.to_owned();
                         rsx!(
                         button {
                             id: "{name}",
-                            class: "models, show",
-                            onclick: move |_| { model_fields.set(fields.clone()); println!("{name}") },
+                            class: {
+                                if model_picked.get() == &name {
+                                    "models, selected"
+                                }else {
+                                    "models"
+                                }
+                            },
+                            onclick: move |_| {
+                                model_picked.set(name.clone());
+                                model_fields.set(fields.clone()); println!("{name}") },
                             "{name}"
                         }
                     )})
@@ -125,12 +163,16 @@ fn app(cx: Scope) -> Element {
             span {
                 id: "wait",
                 class: "center",
-                "{wait_num1:?}/{wait_num2:?}"
+                "{count1}/{count2}"
             }
             div  {
                 class: "findAndReplace",
                 form {
                     onsubmit: move |event| 'a: {
+                        dbg!(0);
+                        let deck_picked = deck_picked.get();
+                        dbg!(1);
+
                         let data = event.data.values.clone();
                         dbg!(&data);
 
@@ -158,28 +200,63 @@ fn app(cx: Scope) -> Element {
                         if field.is_empty() {
                             error_message.set(String::from("Please enter a field name"));
                             break 'a
+                        }else if !model_fields.get().contains(&field) {
+                            error_message.set(String::from("Please enter a valid field name"));
                         }
-                        let count = Arc::from(CountState(AtomicI32::from(0)));
+                        dbg!(2);
+
                         let mut cards = Vec::new();
 
-                        dbg!(&replace_with, &field, &cards_with, &line_breaks, &as_space, &findreplace, &deck_picked);
+                        dbg!(&replace_with, &field, &cards_with, &line_breaks, &as_space, &findreplace, deck_picked.clone());
 
                         tokio::runtime::Runtime::new().unwrap().block_on( async {
-                            cards = check_for_cards(deck_picked.get().clone(), cards_with.clone(), field.clone()).await.unwrap();
+                            cards = check_for_cards(deck_picked.clone(), cards_with.clone(), field.clone(), (server.get(), port.get())).await.unwrap();
                         });
                         if cards.is_empty() {
                             error_message.set("No cards found!".to_string());
                             break 'a
                         }
+                        dbg!(4);
                         // dbg!(&cards);
 
+                        count2.set(cards.len() as i32);
+
+                        let count = Arc::from(CountState(AtomicI32::from(0)));
+
+
                         error_message.set("".to_string());
-                        tokio::runtime::Runtime::new().unwrap().block_on( async {
-                            edit_cards(cards, field, replace_with, findreplace, cards_with, line_breaks, Some(as_space), count).await.unwrap();
+                        dbg!(5);
+
+                        let rt = tokio::runtime::Runtime::new().unwrap();
+                        let count = Arc::from(CountState(AtomicI32::from(0)));
+                        let server = server.get().clone();
+                        let port = port.get().clone();
+
+                        let count_ = count.clone();
+                        let cx = cx.clone();
+                        cx.spawn(async move {
+                            let _ = tokio::task::spawn_local( async move {
+                                loop {
+                                    use_set(cx, &COUNT1)(count_.0.load(Ordering::Relaxed));
+                                    if use_read(cx, &COUNT1) >= &(use_read(cx, &COUNT2) - 1) {
+                                        break
+                                    }
+                                    sleep(Duration::from_millis(100));
+                                }
+                            }).await;
+                            let count_ = count.clone();
+                            _ = tokio::task::spawn_local( async move {
+                                edit_cards(cards, field, replace_with, findreplace, cards_with, line_breaks, Some(as_space), count_, (&server, &port)).await.unwrap();
+                            }).await
                         });
 
-                        //TODO: I don't think the checkbox values work
 
+                        rt.block_on(async move {
+
+
+
+                        });
+                        dbg!(6);
                     },
 
                     id: "query",
@@ -212,8 +289,8 @@ fn app(cx: Scope) -> Element {
                     input { r#type: "checkbox", id: "line_breaks", name: "line_breaks", value: "lineBreaks" }
                     label { r#for: "line_breaks", "remove line breaks?" }
                     br {}
-                    input { r#type: "checkbox", id: "as_space", name: "as_space", value: "asSpace" }
-                    label { r#for: "line_breaks", "as space?" }
+                    input { r#type: "checkbox", class: "as_space", id: "as_space", name: "as_space", value: "asSpace" }
+                    label { class: "as_space", r#for: "line_breaks", "replace line break with a space?",  }
                     br {}
 
                     input { r#type: "submit", value: "submit"}
@@ -230,20 +307,20 @@ fn app(cx: Scope) -> Element {
         }
     })
 }
-fn get_decks() -> Vec<String> {
+fn get_decks(server_port: (&str, &str)) -> Vec<String> {
     let a = tokio::runtime::Runtime::new().unwrap();
-    a.block_on(async {deck_names().await})
+    a.block_on(async {deck_names(server_port).await})
 }
 
-async fn get_notes(deck: String) -> Result<(), String> {
-    _ = find_notes(&Client::new(), &deck, None, "".to_string()).await;
+async fn get_notes(deck: String, server_port: (&str, &str)) -> Result<(), String> {
+    _ = find_notes(&Client::new(), &deck, None, "".to_string(), server_port).await;
     Ok(())
 }
 
 
-fn find_models() -> Vec<(String, Vec<String>)> {
+fn find_models(server_port: (&str, &str)) -> Vec<(String, Vec<String>)> {
     let a = tokio::runtime::Runtime::new().unwrap();
-    let bun = a.block_on(async {get_models().await}).unwrap();
+    let bun = a.block_on(async {get_models(server_port).await}).unwrap();
     let mut ny = Vec::new();
     for model in bun {
         ny.push((model.name, model.fields));

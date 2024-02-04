@@ -2,8 +2,9 @@ use std::collections::HashMap;
 // use std::error::Error;
 use std::sync::Arc;
 
+use fermi::use_read;
 use reqwest::{Client, Error};
-use serde::{Deserialize, Serialize};
+use serde::{ser, Deserialize, Serialize};
 
 use crate::responses::{
     CardsResponse, DecksResponse, ModelFieldsResponse, ModelsResponse, NoteInfoResponse, PostResult,
@@ -84,9 +85,13 @@ pub async fn get_req(
     reqtype: ReqType,
     client: &Client,
     request: Request,
+    server_port: (&str, &str)
 ) -> std::result::Result<PostResult, Error> {
+    let s = server_port.0;
+    let p = server_port.1;
+
     let res = client
-        .post("http://127.0.0.1:8765/")
+        .post(format!("http://{s}:{p}/"))
         .json(&request)
         .send()
         .await?;
@@ -127,12 +132,14 @@ pub async fn check_for_cards(
     deck: String,
     cards_with: String,
     in_field: String,
+    server_port: (&str, &str)
 ) -> std::result::Result<Vec<i64>, String> {
     match find_notes(
         &Client::new(),
         &deck,
         Some(&in_field),
-        cards_with
+        cards_with,
+        server_port
     )
     .await
     {
@@ -149,7 +156,8 @@ pub async fn edit_cards(
     find: String,
     del_newline: bool,
     as_space: Option<bool>,
-    counter: Arc<CountState>
+    counter: Arc<CountState>,
+    server_port: (&str, &str)
 ) -> Result<String, ()> {
     let client = Client::new();
     let count = counter.clone();
@@ -164,18 +172,19 @@ pub async fn edit_cards(
             del_newline,
             as_space,
             count,
+            server_port
         )
         .await
         .unwrap();
     } else {
-        replace_whole_fields(&client, cards, &in_field, &replace_with, count)
+        replace_whole_fields(&client, cards, &in_field, &replace_with, count, server_port)
             .await
             .unwrap()
     }
 
     Ok("Done!".to_string())
 }
-pub async fn deck_names() -> Vec<String> {
+pub async fn deck_names(server_port: (&str, &str)) -> Vec<String> {
     let client = Client::new();
 
     let request: Request = Request {
@@ -183,7 +192,7 @@ pub async fn deck_names() -> Vec<String> {
         version: 6,
         params: None,
     };
-    get_req(ReqType::Decks, &client, request)
+    get_req(ReqType::Decks, &client, request, server_port)
         .await
         .unwrap()
         .to_decks()
@@ -194,6 +203,7 @@ pub async fn find_notes(
     deck: &str,
     field: Option<&str>,
     cards_with: String,
+    server_port: (&str, &str)
 ) -> std::result::Result<Vec<i64>, Error> {
     let mut cards = Vec::new();
     let bun = field.unwrap_or("You'll never see this");
@@ -208,7 +218,7 @@ pub async fn find_notes(
                 ..Params::default()
             }),
         };
-        let mut a = match get_req(ReqType::Cards, client, request).await {
+        let mut a = match get_req(ReqType::Cards, client, request, server_port).await {
             Ok(e) => e.to_cards(),
             Err(e) => panic!("{e}"),
         };
@@ -225,7 +235,7 @@ pub async fn find_notes(
             }),
         };
 
-        let mut a = match get_req(ReqType::Cards, client, request).await {
+        let mut a = match get_req(ReqType::Cards, client, request, server_port).await {
             Ok(e) => e.to_cards(),
             Err(e) => panic!("{e}"),
         };
@@ -241,7 +251,7 @@ pub async fn find_notes(
                 ..Params::default()
             }),
         };
-        let mut a = match get_req(ReqType::Cards, client, request).await {
+        let mut a = match get_req(ReqType::Cards, client, request, server_port).await {
             Ok(e) => e.to_cards(),
             Err(e) => panic!("{e}"),
         };
@@ -252,6 +262,7 @@ pub async fn find_notes(
 pub async fn notes_info(
     client: &Client,
     notes: Vec<NoteInput>,
+    server_port: (&str, &str)
 ) -> std::result::Result<Vec<NoteInfo>, Error> {
     let mut notes2: Vec<NoteInfo> = Vec::new();
 
@@ -265,7 +276,7 @@ pub async fn notes_info(
             }),
         };
         //Turn NoteInputs into NoteInfos
-        let bun = get_req(ReqType::NoteInfo, client, request)
+        let bun = get_req(ReqType::NoteInfo, client, request, server_port)
             .await
             .unwrap()
             .to_notes_info();
@@ -337,21 +348,21 @@ pub async fn notes_info(
     Ok(notes2)
 }
 
-pub async fn get_models() -> Result<Vec<Model>, Error> {
+pub async fn get_models(server_port: (&str, &str)) -> Result<Vec<Model>, Error> {
     let client = &Client::new();
     let request: Request = Request {
         action: "modelNames".to_string(),
         version: 6,
         ..Default::default()
     };
-    let model_names = get_req(ReqType::Models, client, request)
+    let model_names = get_req(ReqType::Models, client, request, server_port)
         .await
         .unwrap()
         .to_model_names();
 
-    Ok(get_model_fields(client, model_names).await)
+    Ok(get_model_fields(client, model_names, server_port).await)
 }
-pub async fn get_model_fields(client: &Client, models: Vec<String>) -> Vec<Model> {
+pub async fn get_model_fields(client: &Client, models: Vec<String>, server_port: (&str, &str)) -> Vec<Model> {
     let mut models2: Vec<Model> = Vec::new();
     for model in models {
         let request: Request = Request {
@@ -363,7 +374,7 @@ pub async fn get_model_fields(client: &Client, models: Vec<String>) -> Vec<Model
             }),
         };
 
-        let fields = get_req(ReqType::ModelFields, client, request)
+        let fields = get_req(ReqType::ModelFields, client, request, server_port)
             .await
             .unwrap()
             .to_model_fields();
