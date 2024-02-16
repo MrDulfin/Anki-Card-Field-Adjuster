@@ -25,15 +25,16 @@ mod responses;
 #[derive(Debug)]
 pub struct CountState(pub AtomicI32);
 
-
-
 fn main() {
-    dioxus_desktop::launch_cfg(app, Config::default()
-        .with_window(WindowBuilder::new()
-        .with_inner_size(LogicalSize::new(1000, 750))
-        .with_title("MrDulfin's Anki Cards Adjuster")
-        .with_resizable(false)
-    ));
+    dioxus_desktop::launch_cfg(
+        app,
+        Config::default().with_window(
+            WindowBuilder::new()
+                .with_inner_size(LogicalSize::new(1000, 750))
+                .with_title("MrDulfin's Anki Cards Adjuster")
+                .with_resizable(false),
+        ),
+    );
 }
 
 #[allow(clippy::redundant_closure)]
@@ -46,12 +47,10 @@ fn app(cx: Scope) -> Element {
     let error_message = use_state(cx, || String::new());
     let mut server = use_state(cx, || "127.0.0.1".to_owned());
     let mut port = use_state(cx, || "8765");
-    let decks = get_decks((server.get(),port.get()));
-    let models = find_models((server.get(),port.get()));
+    let decks = get_decks((server.get(), port.get()));
+    let models = find_models((server.get(), port.get()));
 
     let wait_message: &UseState<String> = use_state(cx, || String::new());
-
-
 
     cx.render(rsx! {
         style { include_str!(".\\styles.css") }
@@ -264,7 +263,7 @@ fn app(cx: Scope) -> Element {
 }
 fn get_decks(server_port: (&str, &str)) -> Vec<String> {
     let a = tokio::runtime::Runtime::new().unwrap();
-    a.block_on(async {deck_names(server_port).await})
+    a.block_on(async { deck_names(server_port).await })
 }
 
 async fn get_notes(deck: String, server_port: (&str, &str)) -> Result<(), String> {
@@ -272,14 +271,12 @@ async fn get_notes(deck: String, server_port: (&str, &str)) -> Result<(), String
     Ok(())
 }
 
-
 fn find_models(server_port: (&str, &str)) -> Vec<(String, Vec<String>)> {
     let a = tokio::runtime::Runtime::new().unwrap();
-    let bun = a.block_on(async {get_models(server_port).await}).unwrap();
+    let bun = a.block_on(async { get_models(server_port).await }).unwrap();
     let mut ny = Vec::new();
     for model in bun {
         ny.push((model.name, model.fields));
     }
     ny
 }
-

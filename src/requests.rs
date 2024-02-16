@@ -84,7 +84,7 @@ pub async fn get_req(
     reqtype: ReqType,
     client: &Client,
     request: Request,
-    server_port: (&str, &str)
+    server_port: (&str, &str),
 ) -> std::result::Result<PostResult, Error> {
     let s = server_port.0;
     let p = server_port.1;
@@ -99,9 +99,9 @@ pub async fn get_req(
         ReqType::None => Ok(PostResult::None),
         ReqType::Cards => {
             let bun: CardsResponse = res.json().await?;
-            Ok(PostResult::Cards( match bun.result {
+            Ok(PostResult::Cards(match bun.result {
                 Some(e) => e,
-                None => Vec::<i64>::new()
+                None => Vec::<i64>::new(),
             }))
         }
         ReqType::Decks => {
@@ -131,14 +131,14 @@ pub async fn check_for_cards(
     deck: String,
     cards_with: String,
     in_field: String,
-    server_port: (&str, &str)
+    server_port: (&str, &str),
 ) -> std::result::Result<Vec<i64>, String> {
     match find_notes(
         &Client::new(),
         &deck,
         Some(&in_field),
         cards_with,
-        server_port
+        server_port,
     )
     .await
     {
@@ -155,7 +155,7 @@ pub async fn edit_cards(
     find: String,
     del_newline: bool,
     as_space: Option<bool>,
-    server_port: (&str, &str)
+    server_port: (&str, &str),
 ) -> Result<String, ()> {
     let client = Client::new();
 
@@ -168,7 +168,7 @@ pub async fn edit_cards(
             cards,
             del_newline,
             as_space,
-            server_port
+            server_port,
         )
         .await
         .unwrap();
@@ -199,7 +199,7 @@ pub async fn find_notes(
     deck: &str,
     field: Option<&str>,
     cards_with: String,
-    server_port: (&str, &str)
+    server_port: (&str, &str),
 ) -> std::result::Result<Vec<i64>, Error> {
     let mut cards = Vec::new();
     let bun = field.unwrap_or("You'll never see this");
@@ -258,7 +258,7 @@ pub async fn find_notes(
 pub async fn notes_info(
     client: &Client,
     notes: Vec<NoteInput>,
-    server_port: (&str, &str)
+    server_port: (&str, &str),
 ) -> std::result::Result<Vec<NoteInfo>, Error> {
     let mut notes2: Vec<NoteInfo> = Vec::new();
 
@@ -358,7 +358,11 @@ pub async fn get_models(server_port: (&str, &str)) -> Result<Vec<Model>, Error> 
 
     Ok(get_model_fields(client, model_names, server_port).await)
 }
-pub async fn get_model_fields(client: &Client, models: Vec<String>, server_port: (&str, &str)) -> Vec<Model> {
+pub async fn get_model_fields(
+    client: &Client,
+    models: Vec<String>,
+    server_port: (&str, &str),
+) -> Vec<Model> {
     let mut models2: Vec<Model> = Vec::new();
     for model in models {
         let request: Request = Request {
