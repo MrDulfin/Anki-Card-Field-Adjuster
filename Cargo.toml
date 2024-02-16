@@ -1,5 +1,5 @@
 [package]
-name = "anki-card-fields-adjuster"
+name = "anki-card-field-adjuster"
 version = "1.0.1"
 description = "A simple Anki Card field editor"
 authors = ["MrDulfin"]
@@ -7,15 +7,39 @@ license = "AGPL"
 repository = ""
 edition = "2021"
 
+
+[package.metadata.bundle]
+name = "AnkiCardFieldAdjuster"
+identifier = "io.githug.mrdulfin.Anki-Card-Field-Adjuster"
+icon = [
+    "\\src\\icons\\32x32.png",
+    "\\src\\icons\\128x128.png",
+    "\\src\\icons\\128x128@2x.png",
+    "\\src\\icons\\icon.icns",
+    "\\src\\icons\\icon.ico",
+    "\\src\\icons\\icon.png",
+    "\\src\\icons\\Square30x30Logo.png",
+    "\\src\\icons\\Square44x44Logo.png",
+    "\\src\\icons\\Square71x71Logo.png",
+    "\\src\\icons\\Square89x89Logo.png",
+    "\\src\\icons\\Square107x107Logo.png",
+    "\\src\\icons\\Square142x142Logo.png",
+    "\\src\\icons\\Square150x150Logo.png",
+    "\\src\\icons\\Square284x284Logo.png",
+    "\\src\\icons\\Square310x310Logo.png",
+    "\\src\\icons\\StoreLogo.png"
+]
+version = "1.1.0"
+copyright = "Copyright (c) MrDulfin 2024. All rights reserved."
+short_description = "Quickly edit your Anki cards in bulk"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 
 [dependencies]
 dioxus = "0.4.3"
 dioxus-desktop = "0.4.3"
-dioxus-helmet = "0.2.3"
 fermi = "0.4.3"
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.196", features = ["derive"] }
 serde_json = { version = "1.0", features = ["std"] }
 tokio = { version = "1.34.0", features = ["full"] }
 reqwest = { version = "0.11.22", features = ["json"] }

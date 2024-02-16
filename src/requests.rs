@@ -81,7 +81,6 @@ pub struct Model {
     pub fields: Vec<String>,
 }
 pub async fn get_req(
-    //TODO: allow the user to change server and port
     reqtype: ReqType,
     client: &Client,
     request: Request,
@@ -156,11 +155,9 @@ pub async fn edit_cards(
     find: String,
     del_newline: bool,
     as_space: Option<bool>,
-    counter: Arc<CountState>,
     server_port: (&str, &str)
 ) -> Result<String, ()> {
     let client = Client::new();
-    let count = counter.clone();
 
     if findreplace {
         find_and_replace(
@@ -171,13 +168,12 @@ pub async fn edit_cards(
             cards,
             del_newline,
             as_space,
-            count,
             server_port
         )
         .await
         .unwrap();
     } else {
-        replace_whole_fields(&client, cards, &in_field, &replace_with, count, server_port)
+        replace_whole_fields(&client, cards, &in_field, &replace_with, server_port)
             .await
             .unwrap()
     }

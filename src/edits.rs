@@ -12,11 +12,10 @@ pub async fn replace_whole_fields(
     cards: Vec<i64>,
     field: &str,
     replace: &str,
-    count: Arc<CountState>,
     server_port: (&str, &str)
 ) -> Result<(), Error> {
     dbg!("I am NOT FindReplacing");
-    dbg!(&client, &field, &replace, &count);
+    dbg!(&client, &field, &replace);
     for (i, card) in cards.iter().enumerate() {
         let mut field2: HashMap<String, String> = HashMap::with_capacity(1);
 
@@ -34,7 +33,6 @@ pub async fn replace_whole_fields(
             }),
         };
         _ = get_req(ReqType::None, client, request, server_port).await;
-        count.0.store(i as i32, Ordering::Release);
     }
     Ok(())
 }
@@ -47,7 +45,6 @@ pub async fn find_and_replace(
     cards: Vec<i64>,
     del_newline: bool,
     as_space: Option<bool>,
-    count: Arc<CountState>,
     server_port: (&str, &str)
 ) -> Result<(), Error> {
     dbg!("I am find and replacing");
@@ -97,8 +94,6 @@ pub async fn find_and_replace(
             }),
         };
         _ = get_req(ReqType::None, client, request, server_port).await;
-
-        count.0.store(i as i32, Ordering::Release);
     }
     Ok(())
 }

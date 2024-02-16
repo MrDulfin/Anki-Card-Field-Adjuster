@@ -27,12 +27,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "anki-card-fields-adjuster"
+name = "anki-card-field-adjuster"
 version = "1.0.1"
 dependencies = [
- "dioxus 0.4.3",
+ "dioxus",
  "dioxus-desktop",
- "dioxus-helmet",
  "fermi",
  "itertools",
  "log",
@@ -574,47 +573,16 @@ dependencies = [
 
 [[package]]
 name = "dioxus"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "211119e0c96d2d0221ce1886b94aed18c41f7f9ccb23d0dc80fff5e919b2a1a2"
-dependencies = [
- "dioxus-core 0.2.1",
- "dioxus-core-macro 0.2.1",
- "dioxus-hooks 0.2.1",
- "dioxus-html 0.2.1",
-]
-
-[[package]]
-name = "dioxus"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d9e3b0725e520250bf23213f996d241cca29cea4360a9bf08a44e0033f8e569"
 dependencies = [
- "dioxus-core 0.4.3",
- "dioxus-core-macro 0.4.3",
- "dioxus-hooks 0.4.3",
+ "dioxus-core",
+ "dioxus-core-macro",
+ "dioxus-hooks",
  "dioxus-hot-reload",
- "dioxus-html 0.4.3",
+ "dioxus-html",
  "dioxus-rsx",
-]
-
-[[package]]
-name = "dioxus-core"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50fd75cb8f4752b122e3935eaa65b4c8c5c61dac2a305cb3d4c3422a01e0aee2"
-dependencies = [
- "backtrace",
- "bumpalo",
- "futures-channel",
- "futures-util",
- "fxhash",
- "indexmap 1.9.3",
- "log",
- "longest-increasing-subsequence",
- "once_cell",
- "slab",
- "smallvec",
 ]
 
 [[package]]
@@ -636,24 +604,12 @@ dependencies = [
 
 [[package]]
 name = "dioxus-core-macro"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "243fe485d0455d6f3645526970100a403fd037740af105cb5f175d8f4227baa6"
-dependencies = [
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "dioxus-core-macro"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21afaccb28587aed0ba98856335912f5ce7052c0aafa74b213829a3b8bfd2345"
 dependencies = [
  "constcat",
- "dioxus-core 0.4.3",
+ "dioxus-core",
  "dioxus-rsx",
  "prettyplease",
  "proc-macro2",
@@ -675,9 +631,9 @@ checksum = "bf3ea0b1f6e64157b43e73d7ec3985df904c89ecf313bff93e06ff7d3b40d1cb"
 dependencies = [
  "async-trait",
  "core-foundation",
- "dioxus-core 0.4.3",
+ "dioxus-core",
  "dioxus-hot-reload",
- "dioxus-html 0.4.3",
+ "dioxus-html",
  "dioxus-interpreter-js",
  "dunce",
  "futures-channel",
@@ -698,36 +654,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "dioxus-helmet"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc3d9497c5a72be73f2e0b4a40a94a1e5f52f4934dd8b3e7288e99fbc22c31e2"
-dependencies = [
- "dioxus 0.2.4",
- "fxhash",
- "js-sys",
- "lazy_static",
- "web-sys",
-]
-
-[[package]]
-name = "dioxus-hooks"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51ffbb5b87c3bcd32a5629b5bd7921b7a7c685eded345c32100574b4a4df7872"
-dependencies = [
- "dioxus-core 0.2.1",
- "futures-channel",
- "log",
-]
-
-[[package]]
 name = "dioxus-hooks"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5bb23ce82df4fb13e9ddaa01d1469f1f32d683dd4636204bd0a0eaf434b65946"
 dependencies = [
- "dioxus-core 0.4.3",
+ "dioxus-core",
  "dioxus-debug-cell",
  "futures-channel",
  "slab",
@@ -741,21 +673,12 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7d8c9e89e866a6b84b8ad696f0ff2f6f6563d2235eb99acc6952f19e516cc09"
 dependencies = [
- "dioxus-core 0.4.3",
- "dioxus-html 0.4.3",
+ "dioxus-core",
+ "dioxus-html",
  "dioxus-rsx",
  "interprocess-docfix",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "dioxus-html"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c42fe33f30303e9acb0404e9c9aa61535ab50ad9e84f4809543881ee6a2b5abc"
-dependencies = [
- "dioxus-core 0.2.1",
 ]
 
 [[package]]
@@ -766,7 +689,7 @@ checksum = "828a42a2d70688a2412a8538c8b5a5eceadf68f682f899dc4455a0169db39dfd"
 dependencies = [
  "async-channel 1.9.0",
  "async-trait",
- "dioxus-core 0.4.3",
+ "dioxus-core",
  "enumset",
  "euclid",
  "keyboard-types",
@@ -790,7 +713,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c974133c7c95497a486d587e40449927711430b308134b9cd374b8d35eceafb3"
 dependencies = [
- "dioxus-core 0.4.3",
+ "dioxus-core",
  "proc-macro2",
  "quote",
  "syn 2.0.48",
@@ -942,7 +865,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6bc4bef3f03ad801dac8ffda8dc272bbabc70e0f7d18fb23fb40db86d3b166c1"
 dependencies = [
- "dioxus-core 0.4.3",
+ "dioxus-core",
  "im-rc",
  "tracing",
 ]
@@ -1394,18 +1317,12 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http",
- "indexmap 2.1.0",
+ "indexmap",
  "slab",
  "tokio",
  "tokio-util",
  "tracing",
 ]
-
-[[package]]
-name = "hashbrown"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 
 [[package]]
 name = "hashbrown"
@@ -1564,22 +1481,12 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "1.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
-dependencies = [
- "autocfg",
- "hashbrown 0.12.3",
-]
-
-[[package]]
-name = "indexmap"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d530e1a18b1cb4c484e6e34556a0d948706958449fca0cab753d649f2bce3d1f"
 dependencies = [
  "equivalent",
- "hashbrown 0.14.3",
+ "hashbrown",
 ]
 
 [[package]]
@@ -3186,7 +3093,7 @@ version = "0.19.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
- "indexmap 2.1.0",
+ "indexmap",
  "toml_datetime",
  "winnow",
 ]
@@ -3197,7 +3104,7 @@ version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34d383cd00a163b4a5b85053df514d45bc330f6de7737edfe0a93311d1eaa03"
 dependencies = [
- "indexmap 2.1.0",
+ "indexmap",
  "serde",
  "serde_spanned",
  "toml_datetime",

@@ -27,4 +27,4 @@ dist-ssr
 target/
 .html
 .js
-.png
+icon.png

@@ -6,7 +6,6 @@ use dioxus::prelude::*;
 use dioxus_desktop::tao::event_loop::{EventLoop, EventLoopWindowTarget};
 use dioxus_desktop::tao::window;
 use dioxus_desktop::{use_window, Config, LogicalSize, WindowBuilder};
-use dioxus_helmet::Helmet;
 use fermi::prelude::*;
 
 use reqwest::Client;
@@ -37,15 +36,6 @@ fn main() {
     ));
 }
 
-static COUNT1: Atom<i32> = Atom(|_| 0);
-static COUNT2: Atom<i32> = Atom(|_| 0);
-
-// static DECK: Atom<String> = Atom(|_| String::new());
-
-// static SERVER: Atom<String> = Atom(|_| "127.0.0.1".to_string());
-// static PORT: Atom<String> = Atom(|_| "8765".to_string());
-
-
 #[allow(clippy::redundant_closure)]
 fn app(cx: Scope) -> Element {
     use_init_atom_root(cx);
@@ -59,8 +49,7 @@ fn app(cx: Scope) -> Element {
     let decks = get_decks((server.get(),port.get()));
     let models = find_models((server.get(),port.get()));
 
-    let count1: &UseState<i32> = use_state(cx, || 0);
-    let count2: &UseState<i32> = use_state(cx, || 0);
+    let wait_message: &UseState<String> = use_state(cx, || String::new());
 
 
 
@@ -163,15 +152,15 @@ fn app(cx: Scope) -> Element {
             span {
                 id: "wait",
                 class: "center",
-                "{count1}/{count2}"
+                "{wait_message}"
             }
             div  {
                 class: "findAndReplace",
                 form {
                     onsubmit: move |event| 'a: {
-                        dbg!(0);
+
                         let deck_picked = deck_picked.get();
-                        dbg!(1);
+
 
                         let data = event.data.values.clone();
                         dbg!(&data);
@@ -181,29 +170,22 @@ fn app(cx: Scope) -> Element {
                         let mut cards_with = data.get_key_value("cards_with").unwrap().1[0].clone();
 
 
-                        let line_breaks: bool = match data.get_key_value("line_breaks") {
-                            Some(_) => true,
-                            None => false
-                        };
-                        let as_space: bool = match data.get_key_value("as_space") {
-                            Some(_) => true,
-                            None => false
-                        };
-                        let findreplace = match data.get_key_value("remove_whole") {
-                            Some(_) => false,
-                            None => true
-                        };
-                        match data.get_key_value("all_cards") {
-                            Some(_) => {cards_with = "*".to_string()},
-                            None => {}
-                        };
+                        let line_breaks: bool = data.get_key_value("line_breaks").is_some();
+                        let as_space: bool = data.get_key_value("as_space").is_some();
+                        let findreplace = data.get_key_value("remove_whole").is_some();
+
+                        if data.get_key_value("all_cards").is_some() {
+                            cards_with = "*".to_string()
+                        }
                         if field.is_empty() {
                             error_message.set(String::from("Please enter a field name"));
+                            wait_message.set("".to_string());
                             break 'a
                         }else if !model_fields.get().contains(&field) {
                             error_message.set(String::from("Please enter a valid field name"));
+                            wait_message.set("".to_string());
                         }
-                        dbg!(2);
+
 
                         let mut cards = Vec::new();
 
@@ -214,49 +196,22 @@ fn app(cx: Scope) -> Element {
                         });
                         if cards.is_empty() {
                             error_message.set("No cards found!".to_string());
+                            wait_message.set("".to_string());
                             break 'a
                         }
-                        dbg!(4);
-                        // dbg!(&cards);
-
-                        count2.set(cards.len() as i32);
-
-                        let count = Arc::from(CountState(AtomicI32::from(0)));
 
 
                         error_message.set("".to_string());
-                        dbg!(5);
 
-                        let rt = tokio::runtime::Runtime::new().unwrap();
-                        let count = Arc::from(CountState(AtomicI32::from(0)));
                         let server = server.get().clone();
-                        let port = port.get().clone();
+                        let port = port.get();
 
-                        let count_ = count.clone();
-                        let cx = cx.clone();
-                        cx.spawn(async move {
-                            let _ = tokio::task::spawn_local( async move {
-                                loop {
-                                    use_set(cx, &COUNT1)(count_.0.load(Ordering::Relaxed));
-                                    if use_read(cx, &COUNT1) >= &(use_read(cx, &COUNT2) - 1) {
-                                        break
-                                    }
-                                    sleep(Duration::from_millis(100));
-                                }
-                            }).await;
-                            let count_ = count.clone();
-                            _ = tokio::task::spawn_local( async move {
-                                edit_cards(cards, field, replace_with, findreplace, cards_with, line_breaks, Some(as_space), count_, (&server, &port)).await.unwrap();
-                            }).await
+
+                        wait_message.set("Please Wait...".to_string());
+                        tokio::runtime::Runtime::new().unwrap().block_on(async move {
+                                edit_cards(cards, field, replace_with, findreplace, cards_with, line_breaks, Some(as_space), (&server, &port)).await.unwrap();
                         });
-
-
-                        rt.block_on(async move {
-
-
-
-                        });
-                        dbg!(6);
+                        wait_message.set("Done!".to_string());
                     },
 
                     id: "query",
